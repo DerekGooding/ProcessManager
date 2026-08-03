@@ -17,4 +17,19 @@ internal class DisplayEngine
         Process[] process = Process.GetProcesses();
         return process;
     }
+
+    public static void SortByName(Process[] processes)
+    {
+        Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
+    }
+
+    public static void SortById(Process[] processes)
+    {
+        Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));
+    }
+
+    public static void SortByMemory(Process[] processes)
+    {
+        Array.Sort(processes, (x, y) => y.WorkingSet64.CompareTo(x.WorkingSet64));
+    }
 }
