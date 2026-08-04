@@ -72,9 +72,13 @@ internal class DisplayEngine
         {
             return false;
         }
+        catch (NullReferenceException)
+        {
+            return false;
+        }
     }
 
-    public static bool NumberCheck(string stringEnter, out int value)
+    public static bool NumberInit(string stringEnter, out int value)
     {
         if (!int.TryParse(stringEnter, out value)) return false;
         else return true;

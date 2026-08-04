@@ -74,7 +74,7 @@ internal class Display
                     if (menuOptions[i][j] == ':' && menuOptions[i][j + 1] == ' ') leftPartLength = j;
                 }
 
-                for(int l = 0;  l < leftPartLength; l++)
+                for (int l = 0; l < leftPartLength; l++)
                 {
                     Console.ForegroundColor = ConsoleColor.Cyan;
                     Console.Write(menuOptions[i][l]);
@@ -112,14 +112,24 @@ internal class Display
 
         while (true)
         {
+            double totalMemoryUsage = 0;
             var page = processes
             .Skip(COUNT_PROCESSES_IN_PAGE * currentPage)
             .Take(COUNT_PROCESSES_IN_PAGE)
             .ToArray();
 
             Console.Clear();
-            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Cyan);
-            Console.WriteLine($"Current page:{currentPage + 1}\n");
+            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
+            Console.WriteLine($"Current page:{currentPage + 1}\n\n");
+
+            for (int i = 0; i < processes.Length; i++)
+            {
+                totalMemoryUsage += processes[i].WorkingSet64 / (1024 * 1024);
+                if(i == processes.Length - 1)
+                {
+                    Console.WriteLine($"Total memory usage: {totalMemoryUsage}");
+                }
+            }
 
             for (int i = 0; i < page.Length; i++)
             {
@@ -132,9 +142,9 @@ internal class Display
                 string processNameModifier = page[i].ProcessName;
                 if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
 
-                Console.Write($"| cmd ID: {processes.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
+                Console.Write($"| CID: {processes.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
                 Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
-                Console.Write($"| Win ID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
+                Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
                 Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
                 Console.ResetColor();
             }
@@ -196,10 +206,10 @@ internal class Display
             {
                 while (true)
                 {
-                    Console.Write("Enter an index: ");
+                    Console.Write("Enter a CID: ");
                     string? userIndexString = Console.ReadLine();
 
-                    if (!DisplayEngine.NumberCheck(userIndexString ?? String.Empty, out int userIndex))
+                    if (!DisplayEngine.NumberInit(userIndexString ?? String.Empty, out int userIndex))
                     {
                         DisplayError(ErrorType.Wrong_Input);
                         continue;
@@ -246,12 +256,22 @@ internal class Display
         }
     }
 
-    private void DisplayError(ErrorType errorType)
+    private bool DisplayError(ErrorType errorType)
     {
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(Enum.GetName(errorType));
-        Thread.Sleep(1000);
+
+        switch (errorType)
+        {
+            case ErrorType.Run_As_Administator: Console.WriteLine("Error #1: Try to run the program as administrator"); break;
+            case ErrorType.Wrong_Input: Console.WriteLine("Error #2: Wrong input, make sure you have entered it correctly."); break;
+            default: Console.WriteLine("Error 555: Unknown error"); break;
+        }
+
+        Console.WriteLine();
+        Thread.Sleep(1500);
         Console.ResetColor();
+
+        return true;
     }
 }
