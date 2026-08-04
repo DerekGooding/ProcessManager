@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using ProcessManager.Display;
+﻿using ProcessManager.Display;
 
+namespace MainEnter;
 class Program
 {
     static void Main()

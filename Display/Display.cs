@@ -1,9 +1,39 @@
-﻿using ProcessManager.Display.Engine;
+﻿using ErrorTypes;
+using ProcessManager.Display.Engine;
+using System.Diagnostics;
 
 namespace ProcessManager.Display;
 
 internal class Display
 {
+    Process[] processes = DisplayEngine.ProcessesListLoad();
+
+    private const string LOGO = @"
+                                .-:                     
+                                ..:                     
+               -====             .*=         =--=       
+               :--+=-            =#+        ====        
+                 -:: -           :%= ++    +*+##*       
+                   :+           :**-+-   ++#%=*++       
+                     :#+         --=-  -*+=++           
+                       #+        :--- : ===+=*          
+                       - **     ==+= =  ==:=            
+                 - --  :===#-+++*%#:+**#%%#::---++:- .::
+             :-         -*+-*-=%%@%*%%%%+#+++ =--==:    
+                            :*##%#%%%++   +=--+=*+=---=-
+                               **#.-#=-==.=+*#+==       
+                               =+= .:+*#%#+:.:          
+                    ##=-+#*    -= . .--.#-#.: .-        
+                *+#**%@#*      :=*= .***=+*#%*+ .       
+              *#=*-=#++       =-=.=  +##%%++#%%%%#.++   
+             #*#%%#@#*         --.   +##%%%#+%**@@#*+#+ 
+            ###%%%%#           ::.   %#%%%#  ##%%%##*  
+            ##%%%              :-:.  %#%%      ##      
+                               =-:. #%%%              
+                               =-:  *%%              
+                                :
+";
+
     private string[] menuOptions =
         {
             "1. Processes Menu",
@@ -20,17 +50,25 @@ internal class Display
     private string[] processOptions =
        {
             "1. Kill Process",
-            "2. Soft Kill Process",
-            "3. Soft Kill Process",
+            "2. Close main process window",
+            "3. Open process file directory",
        };
 
     public void MainMenu()
     {
+
         while (true)
         {
             Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write(LOGO);
+            Console.ResetColor();
+
             for (int i = 0; i < menuOptions.Length; i++)
+            {
+                Console.SetCursorPosition(75, 11 + i);
                 Console.WriteLine(menuOptions[i]);
+            }
 
             ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
             switch (consoleKey.Key)
@@ -38,41 +76,45 @@ internal class Display
                 case ConsoleKey.D1: ProcessesListDisplay(); break;
                 case ConsoleKey.Escape:
                 case ConsoleKey.D2: DisplayEngine.Exit(); break;
-                default: WrongInputError(); continue;
+                default: DisplayError(ErrorType.Wrong_Input); continue;
             }
         }
     }
 
     private void ProcessesListDisplay() // TODO: СДЕЛАТЬ ТАК, ЧТОБЫ ОБНОВЛЯЛОСЬ В ФОНЕ, ПОКА ЖДЕТ ВВОД ПОЛЬЗОВАТЕЛЯ.
     {
-        var process = DisplayEngine.ProcessesListLoad();
         const int COUNT_PROCESSES_IN_PAGE = 20;
-        int countOfPages = process.Length / COUNT_PROCESSES_IN_PAGE;
+        int countOfPages = processes.Length / COUNT_PROCESSES_IN_PAGE;
         int currentPage = 0;
 
-        if (process.Length % 10 != 0)
+        if (processes.Length % 10 != 0)
             countOfPages++;
 
         while (true)
         {
-            var page = process
+            var page = processes
             .Skip(COUNT_PROCESSES_IN_PAGE * currentPage)
             .Take(COUNT_PROCESSES_IN_PAGE)
             .ToArray();
 
             Console.Clear();
-            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC' exit");
+            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Red);
             Console.WriteLine($"Current page:{currentPage + 1}\n");
 
             for (int i = 0; i < page.Length; i++)
             {
-                double memoryUsage = page[i].WorkingSet64 / (1024 * 1024);
+                ConsoleColor currentColor;
+
+                if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
+                else currentColor = ConsoleColor.Gray;
+
+                double memoryUsage = page[i].WorkingSet64 / (1024 * 1024); // convert byte to MB
                 string processNameModifier = page[i].ProcessName;
                 if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
 
-                Console.Write($"| Page ID: {i,-2} \t", Console.ForegroundColor = ConsoleColor.DarkGray);
+                Console.Write($"| cmd ID: {processes.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
                 Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
-                Console.Write($"| Id: {page[i].Id,-5} \t", Console.ForegroundColor = ConsoleColor.DarkGray);
+                Console.Write($"| Win ID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
                 Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
                 Console.ResetColor();
 
@@ -92,6 +134,10 @@ internal class Display
                     if (currentPage > 0) currentPage--;
                     break;
 
+                case ConsoleKey.Oem3:
+                    if (!ProcessesManage()) continue;
+                    break;
+
                 case ConsoleKey.Tab:
                     if (!ProcessesFilter()) continue;
                     break;
@@ -102,8 +148,7 @@ internal class Display
 
             bool ProcessesFilter()
             {
-                Console.Clear();
-
+                Console.WriteLine();
                 for (int i = 0; i < filterOptions.Length; i++)
                     Console.WriteLine(filterOptions[i]);
 
@@ -111,15 +156,15 @@ internal class Display
                 switch (consoleKey.Key)
                 {
                     case ConsoleKey.D1:
-                        DisplayEngine.SortByName(process);
+                        DisplayEngine.SortByName(processes);
                         return true;
 
                     case ConsoleKey.D2:
-                        DisplayEngine.SortById(process);
+                        DisplayEngine.SortById(processes);
                         return true;
 
                     case ConsoleKey.D3:
-                        DisplayEngine.SortByMemory(process);
+                        DisplayEngine.SortByMemory(processes);
                         return true;
 
                     case ConsoleKey.Backspace:
@@ -128,14 +173,66 @@ internal class Display
 
                 return false;
             }
+
+            bool ProcessesManage()
+            {
+                while (true)
+                {
+                    Console.Write("Enter an index: ");
+                    string? userIndexString = Console.ReadLine();
+
+                    if (!DisplayEngine.NumberCheck(userIndexString ?? String.Empty, out int userIndex))
+                    {
+                        DisplayError(ErrorType.Wrong_Input);
+                        continue;
+                    }
+
+                    Console.WriteLine();
+
+                    for (int i = 0; i < processOptions.Length; i++)
+                        Console.WriteLine(processOptions[i]);
+
+                    Console.WriteLine("Choose option");
+
+                    ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+                    switch (consoleKey.Key)
+                    {
+                        case ConsoleKey.D1:
+                            {
+                                if (!DisplayEngine.KillProcess(processes, userIndex))
+                                    DisplayError(ErrorType.Run_As_Administator);
+                            }
+                            return true;
+
+                        case ConsoleKey.D2:
+                            {
+                                if (!DisplayEngine.CloseMainWindowProcess(processes, userIndex))
+                                    DisplayError(ErrorType.Run_As_Administator);
+                            }
+                            return true;
+
+                        case ConsoleKey.D3:
+                            {
+                                if (!DisplayEngine.OpenFileDirectoryProcess(processes, userIndex))
+                                    DisplayError(ErrorType.Run_As_Administator);
+                            }
+                            return true;
+
+                        case ConsoleKey.Backspace:
+                        case ConsoleKey.Escape: return false;
+                    }
+
+                    return false;
+                }
+            }
         }
     }
 
-    private void WrongInputError()
+    private void DisplayError(ErrorType errorType)
     {
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("Error #1: Wrong user input");
+        Console.WriteLine(Enum.GetName(errorType));
         Thread.Sleep(1000);
         Console.ResetColor();
     }
