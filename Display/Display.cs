@@ -9,8 +9,8 @@ internal class Display
     Process[] processes = DisplayEngine.ProcessesListLoad();
 
     private const string LOGO = @"
-                                .-:                     
                                 ..:                     
+                                .-:                     
                -====             .*=         =--=       
                :--+=-            =#+        ====        
                  -:: -           :%= ++    +*+##*       
@@ -36,8 +36,8 @@ internal class Display
 
     private string[] menuOptions =
         {
-            "1. Processes Menu",
-            "2. Exit",
+            "Enter: Processes Menu",
+            "Esc: Exit",
         };
 
     private string[] filterOptions =
@@ -66,16 +66,36 @@ internal class Display
 
             for (int i = 0; i < menuOptions.Length; i++)
             {
-                Console.SetCursorPosition(75, 11 + i);
-                Console.WriteLine(menuOptions[i]);
+                int leftPartLength = 0;
+                Console.SetCursorPosition(75, 12 + i);
+
+                for (int j = 0; j < menuOptions[i].Length; j++)
+                {
+                    if (menuOptions[i][j] == ':' && menuOptions[i][j + 1] == ' ') leftPartLength = j;
+                }
+
+                for(int l = 0;  l < leftPartLength; l++)
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write(menuOptions[i][l]);
+                }
+
+                Console.ResetColor();
+
+                for (int k = leftPartLength; k < menuOptions[i].Length; k++)
+                {
+                    Console.Write(menuOptions[i][k]);
+                }
+
+                Console.WriteLine();
             }
 
             ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
             switch (consoleKey.Key)
             {
-                case ConsoleKey.D1: ProcessesListDisplay(); break;
-                case ConsoleKey.Escape:
-                case ConsoleKey.D2: DisplayEngine.Exit(); break;
+                case ConsoleKey.Enter: ProcessesListDisplay(); break;
+                case ConsoleKey.Backspace:
+                case ConsoleKey.Escape: DisplayEngine.Exit(); break;
                 default: DisplayError(ErrorType.Wrong_Input); continue;
             }
         }
@@ -98,7 +118,7 @@ internal class Display
             .ToArray();
 
             Console.Clear();
-            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Red);
+            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Cyan);
             Console.WriteLine($"Current page:{currentPage + 1}\n");
 
             for (int i = 0; i < page.Length; i++)
@@ -117,8 +137,6 @@ internal class Display
                 Console.Write($"| Win ID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
                 Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
                 Console.ResetColor();
-
-                //TODO: СДЕЛАТЬ ТАК, ЧТОБЫ ПИСАЛО В ПРОЦЕССАХ не просто exitlag условно а exitlag.exe и тд тп по типу .exe .pdf и так далее. В общем обойти win exception
             }
 
             Thread.Sleep(200);
