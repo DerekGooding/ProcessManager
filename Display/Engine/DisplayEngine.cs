@@ -72,7 +72,16 @@ internal class DisplayEngine
         {
             return false;
         }
-        catch (NullReferenceException)
+    }
+
+    public static bool СhangeProcessPriority(Process[] processes, int index, ProcessPriorityClass newPriority)
+    {
+        try
+        {
+            processes[index].PriorityClass = newPriority;
+            return true;
+        }
+        catch (Win32Exception)
         {
             return false;
         }

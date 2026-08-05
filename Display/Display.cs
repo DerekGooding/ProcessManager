@@ -43,7 +43,7 @@ internal class Display
     private string[] filterOptions =
        {
             "1. Filter by Name",
-            "2. Filter by ID",
+            "2. Filter by PID",
             "3. Filter by Memory",
        };
 
@@ -52,6 +52,17 @@ internal class Display
             "1. Kill Process",
             "2. Close main process window",
             "3. Open process file directory",
+            "4. Change priority of process"
+       };
+
+    private string[] changePriorityOptions =
+       {
+            "1. RealTime ( MAX )",
+            "2. High",
+            "3. AboveNormal",
+            "4. Normal",
+            "5. BelowNormal",
+            "6. Idle ( AFK )",
        };
 
     public void MainMenu()
@@ -244,6 +255,51 @@ internal class Display
                                 if (!DisplayEngine.OpenFileDirectoryProcess(processes, userIndex))
                                     DisplayError(ErrorType.Run_As_Administator);
                             }
+                            return true;
+
+                        case ConsoleKey.D4: if (!ChangePriority(userIndex)); return false;
+
+                        case ConsoleKey.Backspace:
+                        case ConsoleKey.Escape: return false;
+                    }
+
+                    return false;
+                }
+            }
+
+            bool ChangePriority(int userIndex)
+            {
+                while (true)
+                {
+                    Console.WriteLine();
+                    for (int i = 0; i < changePriorityOptions.Length; i++)
+                        Console.WriteLine(changePriorityOptions[i]);
+
+                    ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+                    switch (consoleKey.Key)
+                    {
+                        case ConsoleKey.D1:
+                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.RealTime);
+                            return true;
+
+                        case ConsoleKey.D2:
+                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.High);
+                            return true;
+
+                        case ConsoleKey.D3:
+                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.AboveNormal);
+                            return true;
+
+                        case ConsoleKey.D4:
+                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.Normal);
+                            return true;
+
+                        case ConsoleKey.D5:
+                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.BelowNormal);
+                            return true;
+
+                        case ConsoleKey.D6:
+                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.Idle);
                             return true;
 
                         case ConsoleKey.Backspace:
