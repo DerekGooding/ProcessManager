@@ -121,46 +121,17 @@ internal class Display
         if (processes.Length % 10 != 0)
             countOfPages++;
 
+
         while (true)
         {
-            double totalMemoryUsage = 0;
             var page = processes
             .Skip(COUNT_PROCESSES_IN_PAGE * currentPage)
             .Take(COUNT_PROCESSES_IN_PAGE)
             .ToArray();
 
+            var task = ProcessesListAsync();
+
             Console.Clear();
-            Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
-            Console.WriteLine($"Current page:{currentPage + 1}\n\n");
-
-            for (int i = 0; i < processes.Length; i++)
-            {
-                totalMemoryUsage += processes[i].WorkingSet64 / (1024 * 1024);
-                if(i == processes.Length - 1)
-                {
-                    Console.WriteLine($"Total memory usage: {totalMemoryUsage}");
-                }
-            }
-
-            for (int i = 0; i < page.Length; i++)
-            {
-                ConsoleColor currentColor;
-
-                if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
-                else currentColor = ConsoleColor.Gray;
-
-                double memoryUsage = page[i].WorkingSet64 / (1024 * 1024); // convert byte to MB
-                string processNameModifier = page[i].ProcessName;
-                if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
-
-                Console.Write($"| CID: {processes.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
-                Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
-                Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
-                Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
-                Console.ResetColor();
-            }
-
-            Thread.Sleep(200);
 
             ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
             switch (consoleKey.Key)
@@ -185,86 +156,127 @@ internal class Display
                 case ConsoleKey.Escape: return;
             }
 
-            bool ProcessesFilter()
+            async Task ProcessesListAsync()
             {
+                while (true)
+                {
+                    double totalMemoryUsage = 0;
+
+                    Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
+                    Console.WriteLine($"Current page:{currentPage + 1}\n\n");
+
+                    for (int i = 0; i < processes.Length; i++)
+                    {
+                        totalMemoryUsage += processes[i].WorkingSet64 / (1024 * 1024);
+                        if (i == processes.Length - 1)
+                        {
+                            Console.WriteLine($"Total memory usage: {totalMemoryUsage}");
+                        }
+                    }
+
+                    for (int i = 0; i < page.Length; i++)
+                    {
+                        ConsoleColor currentColor;
+
+                        if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
+                        else currentColor = ConsoleColor.Gray;
+
+                        double memoryUsage = page[i].WorkingSet64 / (1024 * 1024); // convert byte to MB
+                        string processNameModifier = page[i].ProcessName;
+                        if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
+
+                        Console.Write($"| CID: {processes.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
+                        Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
+                        Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
+                        Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
+                        Console.ResetColor();
+                    }
+
+                    await Task.Delay(1000);
+                }
+            }
+
+        }
+
+        bool ProcessesFilter()
+        {
+            Console.WriteLine();
+            for (int i = 0; i < filterOptions.Length; i++)
+                Console.WriteLine(filterOptions[i]);
+
+            ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+            switch (consoleKey.Key)
+            {
+                case ConsoleKey.D1:
+                    DisplayEngine.SortByName(processes);
+                    return true;
+
+                case ConsoleKey.D2:
+                    DisplayEngine.SortById(processes);
+                    return true;
+
+                case ConsoleKey.D3:
+                    DisplayEngine.SortByMemory(processes);
+                    return true;
+
+                case ConsoleKey.Backspace:
+                case ConsoleKey.Escape: return false;
+            }
+
+            return false;
+        }
+
+        bool ProcessesManage()
+        {
+            while (true)
+            {
+                Console.Write("Enter a CID: ");
+                string? userIndexString = Console.ReadLine();
+
+                if (!DisplayEngine.NumberInit(userIndexString ?? String.Empty, out int userIndex))
+                {
+                    DisplayError(ErrorType.Wrong_Input);
+                    continue;
+                }
+
                 Console.WriteLine();
-                for (int i = 0; i < filterOptions.Length; i++)
-                    Console.WriteLine(filterOptions[i]);
+
+                for (int i = 0; i < processOptions.Length; i++)
+                    Console.WriteLine(processOptions[i]);
+
+                Console.WriteLine("Choose option");
 
                 ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
                 switch (consoleKey.Key)
                 {
                     case ConsoleKey.D1:
-                        DisplayEngine.SortByName(processes);
+                        {
+                            if (!DisplayEngine.KillProcess(processes, userIndex))
+                                DisplayError(ErrorType.Run_As_Administator);
+                        }
                         return true;
 
                     case ConsoleKey.D2:
-                        DisplayEngine.SortById(processes);
+                        {
+                            if (!DisplayEngine.CloseMainWindowProcess(processes, userIndex))
+                                DisplayError(ErrorType.Run_As_Administator);
+                        }
                         return true;
 
                     case ConsoleKey.D3:
-                        DisplayEngine.SortByMemory(processes);
+                        {
+                            if (!DisplayEngine.OpenFileDirectoryProcess(processes, userIndex))
+                                DisplayError(ErrorType.Run_As_Administator);
+                        }
                         return true;
+
+                    case ConsoleKey.D4: if (!ChangePriority(userIndex)) ; return false;
 
                     case ConsoleKey.Backspace:
                     case ConsoleKey.Escape: return false;
                 }
 
                 return false;
-            }
-
-            bool ProcessesManage()
-            {
-                while (true)
-                {
-                    Console.Write("Enter a CID: ");
-                    string? userIndexString = Console.ReadLine();
-
-                    if (!DisplayEngine.NumberInit(userIndexString ?? String.Empty, out int userIndex))
-                    {
-                        DisplayError(ErrorType.Wrong_Input);
-                        continue;
-                    }
-
-                    Console.WriteLine();
-
-                    for (int i = 0; i < processOptions.Length; i++)
-                        Console.WriteLine(processOptions[i]);
-
-                    Console.WriteLine("Choose option");
-
-                    ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
-                    switch (consoleKey.Key)
-                    {
-                        case ConsoleKey.D1:
-                            {
-                                if (!DisplayEngine.KillProcess(processes, userIndex))
-                                    DisplayError(ErrorType.Run_As_Administator);
-                            }
-                            return true;
-
-                        case ConsoleKey.D2:
-                            {
-                                if (!DisplayEngine.CloseMainWindowProcess(processes, userIndex))
-                                    DisplayError(ErrorType.Run_As_Administator);
-                            }
-                            return true;
-
-                        case ConsoleKey.D3:
-                            {
-                                if (!DisplayEngine.OpenFileDirectoryProcess(processes, userIndex))
-                                    DisplayError(ErrorType.Run_As_Administator);
-                            }
-                            return true;
-
-                        case ConsoleKey.D4: if (!ChangePriority(userIndex)); return false;
-
-                        case ConsoleKey.Backspace:
-                        case ConsoleKey.Escape: return false;
-                    }
-
-                    return false;
-                }
             }
 
             bool ChangePriority(int userIndex)
