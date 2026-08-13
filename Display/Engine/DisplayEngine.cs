@@ -24,14 +24,14 @@ internal class DisplayEngine
         Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
     }
 
-    public static void SortById(Process[] processes)
+    public static void SortByPID(Process[] processes)
     {
         Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));
     }
 
     public static void SortByMemory(Process[] processes)
     {
-        Array.Sort(processes, (x, y) => y.WorkingSet64.CompareTo(x.WorkingSet64));
+        Array.Sort(processes, (x, y) => y.PrivateMemorySize64.CompareTo(x.PrivateMemorySize64));
     }
 
     public static bool KillProcess(Process[] processes, int index)

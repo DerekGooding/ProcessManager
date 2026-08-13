@@ -1,12 +1,15 @@
 ﻿using ErrorTypes;
 using ProcessManager.Display.Engine;
+using SortTypes;
 using System.Diagnostics;
 
 namespace ProcessManager.Display;
 
 internal class Display
 {
-    Process[] processes = DisplayEngine.ProcessesListLoad();
+    Process[]? page;
+    Process[]? processes = DisplayEngine.ProcessesListLoad();
+    SortType currentSortType = SortType.None;
 
     private const string LOGO = @"
                                 ..:                     
@@ -112,8 +115,10 @@ internal class Display
         }
     }
 
-    private void ProcessesListDisplay() // TODO: СДЕЛАТЬ ТАК, ЧТОБЫ ОБНОВЛЯЛОСЬ В ФОНЕ, ПОКА ЖДЕТ ВВОД ПОЛЬЗОВАТЕЛЯ.
+    private async Task ProcessesListDisplay()
     {
+        var cts = new CancellationTokenSource();
+        ConsoleKeyInfo consoleKey = default;
         const int COUNT_PROCESSES_IN_PAGE = 20;
         int countOfPages = processes.Length / COUNT_PROCESSES_IN_PAGE;
         int currentPage = 0;
@@ -121,19 +126,13 @@ internal class Display
         if (processes.Length % 10 != 0)
             countOfPages++;
 
+        var taskLisdLoad = UpdateProcesses();
+        var taskDisplayList = ProcessesListAsync(cts);
 
         while (true)
         {
-            var page = processes
-            .Skip(COUNT_PROCESSES_IN_PAGE * currentPage)
-            .Take(COUNT_PROCESSES_IN_PAGE)
-            .ToArray();
+            consoleKey = DisplayEngine.GetUserInput();
 
-            var task = ProcessesListAsync();
-
-            Console.Clear();
-
-            ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
             switch (consoleKey.Key)
             {
                 case ConsoleKey.E:
@@ -145,57 +144,87 @@ internal class Display
                     break;
 
                 case ConsoleKey.Oem3:
-                    if (!ProcessesManage()) continue;
+                    {
+                        if (cts != null) cts.Cancel();
+                        if (!ProcessesManage()) continue;
+                        cts = new CancellationTokenSource();
+                        taskDisplayList = ProcessesListAsync(cts);
+                    }
                     break;
 
                 case ConsoleKey.Tab:
-                    if (!ProcessesFilter()) continue;
+                    {
+                        {
+                            if (cts != null) cts.Cancel();
+                            if (!ProcessesFilter()) continue;
+                            cts = new CancellationTokenSource();
+                            taskDisplayList = ProcessesListAsync(cts);
+                        }
+                    }
                     break;
 
                 case ConsoleKey.Backspace:
-                case ConsoleKey.Escape: return;
+                case ConsoleKey.Escape:
+                    {
+                        if (cts != null) cts.Cancel();
+                    }
+                    return;
             }
+        }
 
-            async Task ProcessesListAsync()
+        async Task ProcessesListAsync(CancellationTokenSource tokenSource)
+        {
+            while (!tokenSource.Token.IsCancellationRequested)
             {
-                while (true)
+                var currentProcesses = processes;
+
+                if (currentProcesses == null || currentProcesses.Length == 0)
                 {
-                    double totalMemoryUsage = 0;
-
-                    Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
-                    Console.WriteLine($"Current page:{currentPage + 1}\n\n");
-
-                    for (int i = 0; i < processes.Length; i++)
-                    {
-                        totalMemoryUsage += processes[i].WorkingSet64 / (1024 * 1024);
-                        if (i == processes.Length - 1)
-                        {
-                            Console.WriteLine($"Total memory usage: {totalMemoryUsage}");
-                        }
-                    }
-
-                    for (int i = 0; i < page.Length; i++)
-                    {
-                        ConsoleColor currentColor;
-
-                        if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
-                        else currentColor = ConsoleColor.Gray;
-
-                        double memoryUsage = page[i].WorkingSet64 / (1024 * 1024); // convert byte to MB
-                        string processNameModifier = page[i].ProcessName;
-                        if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
-
-                        Console.Write($"| CID: {processes.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
-                        Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
-                        Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
-                        Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
-                        Console.ResetColor();
-                    }
-
-                    await Task.Delay(1000);
+                    await Task.Delay(100);
+                    continue;
                 }
-            }
 
+                page = currentProcesses
+                   .Skip(COUNT_PROCESSES_IN_PAGE * currentPage)
+                   .Take(COUNT_PROCESSES_IN_PAGE)
+                   .ToArray();
+
+
+                double totalMemoryUsage = 0;
+
+                Console.Clear();
+                Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
+                Console.WriteLine($"Current page: {currentPage + 1}|{countOfPages}\n\n");
+
+                for (int i = 0; i < currentProcesses.Length; i++)
+                {
+                    totalMemoryUsage += currentProcesses[i].PrivateMemorySize64 / (1024 * 1024);
+                    if (i == currentProcesses.Length - 1)
+                    {
+                        Console.WriteLine($"Total memory usage: {totalMemoryUsage} | Count of processes: {currentProcesses.Length}");
+                    }
+                }
+
+                for (int i = 0; i < page.Length; i++)
+                {
+                    ConsoleColor currentColor;
+
+                    if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
+                    else currentColor = ConsoleColor.Gray;
+
+                    double memoryUsage = page[i].PrivateMemorySize64 / (1024 * 1024); // convert byte to MB
+                    string processNameModifier = page[i].ProcessName;
+                    if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
+
+                    Console.Write($"| CID: {currentProcesses.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
+                    Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
+                    Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
+                    Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
+                    Console.ResetColor();
+                }
+
+                await Task.Delay(950);
+            }
         }
 
         bool ProcessesFilter()
@@ -208,19 +237,27 @@ internal class Display
             switch (consoleKey.Key)
             {
                 case ConsoleKey.D1:
+                    currentSortType = SortType.Name;
                     DisplayEngine.SortByName(processes);
                     return true;
 
                 case ConsoleKey.D2:
-                    DisplayEngine.SortById(processes);
+                    currentSortType = SortType.PID;
+                    DisplayEngine.SortByPID(processes);
                     return true;
 
                 case ConsoleKey.D3:
+                    currentSortType = SortType.Memory;
                     DisplayEngine.SortByMemory(processes);
                     return true;
 
                 case ConsoleKey.Backspace:
-                case ConsoleKey.Escape: return false;
+                case ConsoleKey.Escape:
+                    {
+                        cts = new CancellationTokenSource();
+                        taskDisplayList = ProcessesListAsync(cts);
+                    }
+                    return false;
             }
 
             return false;
@@ -270,10 +307,15 @@ internal class Display
                         }
                         return true;
 
-                    case ConsoleKey.D4: if (!ChangePriority(userIndex)) ; return false;
+                    case ConsoleKey.D4: if (!ChangePriority(userIndex)) ; return false; // TODO: ПРОРВЕРИТЬ ТУТ ЛОГИКУ
 
                     case ConsoleKey.Backspace:
-                    case ConsoleKey.Escape: return false;
+                    case ConsoleKey.Escape:
+                        {
+                            cts = new CancellationTokenSource();
+                            taskDisplayList = ProcessesListAsync(cts);
+                        }
+                        return false;
                 }
 
                 return false;
@@ -321,6 +363,22 @@ internal class Display
                     return false;
                 }
             }
+        }
+    }
+
+    private async Task UpdateProcesses()
+    {
+        while (true)
+        {
+            processes = DisplayEngine.ProcessesListLoad();
+            switch (currentSortType)
+            {
+                case SortType.Name: DisplayEngine.SortByName(processes); break;
+                case SortType.PID: DisplayEngine.SortByPID(processes); break;
+                case SortType.Memory: DisplayEngine.SortByMemory(processes); break;
+            }
+
+            await Task.Delay(900);
         }
     }
 
