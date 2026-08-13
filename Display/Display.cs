@@ -2,13 +2,17 @@
 using ProcessManager.Display.Engine;
 using SortTypes;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ProcessManager.Display;
 
 internal class Display
 {
+    [DllImport("kernel32.dll")]
+    public static extern void QueryFullProcessImageNameW();
+
     Process[]? page;
-    Process[]? processes = DisplayEngine.ProcessesListLoad();
+    Process[] processes = DisplayEngine.ProcessesListLoad();
     SortType currentSortType = SortType.None;
 
     private const string LOGO = @"
@@ -70,7 +74,6 @@ internal class Display
 
     public void MainMenu()
     {
-
         while (true)
         {
             Console.Clear();
@@ -217,7 +220,7 @@ internal class Display
                     if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
 
                     Console.Write($"| CID: {currentProcesses.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
-                    Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
+                    Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow); // TODO сделать так чтобы расширение файла выводило.
                     Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
                     Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
                     Console.ResetColor();
@@ -307,7 +310,12 @@ internal class Display
                         }
                         return true;
 
-                    case ConsoleKey.D4: if (!ChangePriority(userIndex)) ; return false; // TODO: ПРОРВЕРИТЬ ТУТ ЛОГИКУ
+                    case ConsoleKey.D4:
+                        {
+                            if (!ChangePriority(userIndex))
+                                return false;
+                        } 
+                        return true;  // TODO: ПРОРВЕРИТЬ ТУТ ЛОГИКУ
 
                     case ConsoleKey.Backspace:
                     case ConsoleKey.Escape:
