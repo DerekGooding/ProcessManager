@@ -3,14 +3,12 @@ using ProcessManager.Display.Engine;
 using SortTypes;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ProcessManager.Display;
 
 internal class Display
 {
-    [DllImport("kernel32.dll")]
-    public static extern void QueryFullProcessImageNameW();
-
     Process[]? page;
     Process[] processes = DisplayEngine.ProcessesListLoad();
     SortType currentSortType = SortType.None;
@@ -216,11 +214,14 @@ internal class Display
                     else currentColor = ConsoleColor.Gray;
 
                     double memoryUsage = page[i].PrivateMemorySize64 / (1024 * 1024); // convert byte to MB
-                    string processNameModifier = page[i].ProcessName;
-                    if (page[i].ProcessName.Length >= 25) processNameModifier = page[i].ProcessName[..25] + "...";
+                    string moduleFullNamePath = DisplayEngine.GetModuleFullName(page[i]);
+                    string nameExtension = Path.GetExtension(moduleFullNamePath);
+                    string processName = page[i].ProcessName;
+                    if (page[i].ProcessName.Length >= 25) processName = page[i].ProcessName[..22] + "..." + nameExtension;
+                    else processName += nameExtension;
 
                     Console.Write($"| CID: {currentProcesses.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
-                    Console.Write($"| Name: {processNameModifier,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow); // TODO сделать так чтобы расширение файла выводило.
+                    Console.Write($"| Name: {processName,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
                     Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
                     Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
                     Console.ResetColor();
@@ -315,7 +316,7 @@ internal class Display
                             if (!ChangePriority(userIndex))
                                 return false;
                         } 
-                        return true;  // TODO: ПРОРВЕРИТЬ ТУТ ЛОГИКУ
+                        return true;
 
                     case ConsoleKey.Backspace:
                     case ConsoleKey.Escape:
@@ -390,7 +391,7 @@ internal class Display
         }
     }
 
-    private bool DisplayError(ErrorType errorType)
+    private void DisplayError(ErrorType errorType)
     {
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Red;
@@ -402,10 +403,7 @@ internal class Display
             default: Console.WriteLine("Error 555: Unknown error"); break;
         }
 
-        Console.WriteLine();
         Thread.Sleep(1500);
         Console.ResetColor();
-
-        return true;
     }
 }

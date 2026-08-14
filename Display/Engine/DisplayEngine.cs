@@ -1,10 +1,19 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ProcessManager.Display.Engine;
 
 internal class DisplayEngine
 {
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr OpenProcess(int dwDesiredAcess, bool bInheritHandle, int processId);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, StringBuilder lpExeName, ref int lpdwSize);
+    [DllImport("kernel32.dll")]
+    public static extern bool CloseHandle(IntPtr hProcess);
+
     public static void Exit() => Environment.Exit(0);
 
     public static ConsoleKeyInfo GetUserInput()
@@ -91,5 +100,30 @@ internal class DisplayEngine
     {
         if (!int.TryParse(stringEnter, out value)) return false;
         else return true;
+    }
+
+    public static string GetModuleFullName (Process process)
+    {
+        IntPtr handle = OpenProcess(0x1000, false, process.Id);
+        if(handle != IntPtr.Zero)
+        {
+            try
+            {
+                int size = 512;
+                StringBuilder sb = new StringBuilder(size);
+
+                if(QueryFullProcessImageName(handle, 0, sb, ref size))
+                {
+                    string fullPath = sb.ToString();
+                    return fullPath;
+                }
+            }
+            finally
+            {
+                CloseHandle(handle);
+            }
+        }
+
+        return string.Empty;
     }
 }
