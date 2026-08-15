@@ -1,4 +1,4 @@
-﻿namespace SortTypes
+﻿namespace ProcessManger.Enums
 {
     public enum SortType : byte
     {

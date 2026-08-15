@@ -1,6 +1,6 @@
-﻿using ProcessManager.Display;
+﻿using Process_Manager.Display;
 
-namespace MainEnter;
+namespace Process_manager;
 class Program
 {
     static void Main()
