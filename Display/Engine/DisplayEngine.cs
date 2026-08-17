@@ -1,4 +1,4 @@
-﻿using ProcessManger.AppLogger;
+﻿using Process_Manager.AppLoggeres;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -136,24 +136,5 @@ internal class DisplayEngine
             }
         }
         return string.Empty;
-    }
-
-    public static bool UserMenu(ref CancellationTokenSource updateToken, ref CancellationTokenSource displayToken, Func<bool> action, Func<CancellationTokenSource, Task> asyncDisplayMethod, Func<CancellationTokenSource, Task> asyncUpdateMethod)
-    {
-        AppLogger.LogDebug("Stop update async method");
-        updateToken.Cancel();
-        AppLogger.LogDebug("Stop display async method");
-        displayToken.Cancel();
-        if (!action()) return false;
-
-        AppLogger.LogDebug("Get new update token");
-        updateToken = new CancellationTokenSource();
-        AppLogger.LogDebug("Get new display token");
-        displayToken = new CancellationTokenSource();
-        AppLogger.LogDebug("Start async merhod with new token");
-        _ = asyncUpdateMethod(updateToken);
-        _ = asyncDisplayMethod(displayToken);
-
-        return true;
     }
 }

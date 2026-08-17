@@ -1,23 +1,32 @@
-﻿using Process_Manager.Display.Engine;
-using ProcessManger.AppLogger;
-using ProcessManger.Enums;
+﻿using Process_Manager.AppLoggeres;
+using Process_Manager.Display.Engine;
+using Process_Manager.Enums;
 using System.Diagnostics;
 
 namespace Process_Manager.Display;
 
+// TODO: Сделать новые логт, точнее проверить старые, может внести конкретику.
+
 internal class Display
 {
-    const int COUNT_PROCESSES_IN_PAGE = 20;
-    int countOfPages;
-    int currentPage = 0;
+    private int _id; // _
+    public int hello; // down letter
+    public int Hello { get; set; } // Up letter
+    public const int SIZE = 10; // caps lock
 
-    readonly Lock locker = new();
-    Process[]? page;
-    Process[] processes = Process.GetProcesses();
-    CancellationTokenSource ctsDisplayList = new();
-    CancellationTokenSource ctsUpdateList = new();
-    SortType currentSortType = SortType.None;
-    ConsoleKeyInfo consoleKey = default;
+    private bool _isDisplayList = true;
+
+    private const int _COUNT_PROCESSES_IN_PAGE = 20;
+    private int _countOfPages;
+    private int _currentPage = 0;
+
+    private readonly Lock _locker = new();
+    private Process[]? _page;
+    private Process[] _processes = Process.GetProcesses();
+    private CancellationTokenSource _ctsDisplayList = new();
+    private CancellationTokenSource _ctsUpdateList = new();
+    private SortType _currentSortType = SortType.None;
+    private ConsoleKeyInfo _consoleKey = default;
 
     private const string LOGO = @"
                                 ..:                     
@@ -68,12 +77,12 @@ internal class Display
 
     private readonly string[] changePriorityOptions =
        [
-            "1. RealTime ( MAX )",
+            "1. RealTime",
             "2. High",
             "3. AboveNormal",
             "4. Normal",
             "5. BelowNormal",
-            "6. Idle ( AFK )",
+            "6. Idle",
        ];
 
     public void MainMenu()
@@ -122,16 +131,16 @@ internal class Display
                     {
                         AppLogger.LogDebug("User choice: 'enter'");
                         AppLogger.LogDebug("New ASYNC update token");
-                        ctsUpdateList = new CancellationTokenSource();
+                        _ctsUpdateList = new CancellationTokenSource();
                         AppLogger.LogDebug("New ASYNC display token");
-                        ctsDisplayList = new CancellationTokenSource();
+                        _ctsDisplayList = new CancellationTokenSource();
                         AppLogger.LogDebug("Start ASYNC method: 'UpdateProcessesAsync'");
-                        _ = UpdateProcessesAsync(ctsUpdateList);
+                        _ = UpdateProcessesAsync(_ctsUpdateList);
                         AppLogger.LogDebug("Start ASYNC method: 'ProcessesListAsync'");
-                        _ = ProcessesListAsync(ctsDisplayList);
+                        _ = ProcessesListAsync(_ctsDisplayList);
                         ProcessesListDisplay();
                     }
-                    break; // NOTE: Here was an await warning!
+                    break;
 
                 case ConsoleKey.D9:
                     AppLogger.LogDebug("User CHECK POINT");
@@ -151,31 +160,34 @@ internal class Display
         }
     }
 
-    private void ProcessesListDisplay()
+    private void ProcessesListDisplay() // TODO: Переименовать
     {
         AppLogger.LogDebug("Start method");
 
         while (true)
         {
+            AppLogger.LogDebug("Display list TRUE");
+            _isDisplayList = true;
             AppLogger.LogDebug("Get user input");
-            consoleKey = DisplayEngine.GetUserInput();
 
-            switch (consoleKey.Key)
+
+            _consoleKey = DisplayEngine.GetUserInput();
+            switch (_consoleKey.Key)
             {
                 case ConsoleKey.E:
                     AppLogger.LogDebug("User choice: 'next page'");
-                    if (currentPage < countOfPages - 1) currentPage++;
+                    if (_currentPage < _countOfPages - 1) _currentPage++;
                     break;
 
                 case ConsoleKey.Q:
                     AppLogger.LogDebug("User choice: 'privous page'");
-                    if (currentPage > 0) currentPage--;
+                    if (_currentPage > 0) _currentPage--;
                     break;
 
                 case ConsoleKey.Oem3:
                     {
                         AppLogger.LogDebug("User choice: 'ProcessManage'");
-                        if (!DisplayEngine.UserMenu(ref ctsUpdateList, ref ctsDisplayList, ProcessesManage, ProcessesListAsync, UpdateProcessesAsync))
+                        if (!ProcessesManage())
                             continue;
                     }
                     break;
@@ -183,7 +195,7 @@ internal class Display
                 case ConsoleKey.Tab:
                     {
                         AppLogger.LogDebug("User choice: 'ProcessFilter'");
-                        if (!DisplayEngine.UserMenu(ref ctsUpdateList, ref ctsDisplayList, ProcessesFilter, ProcessesListAsync, UpdateProcessesAsync))
+                        if (ProcessesFilter())
                             continue;
                     }
                     break;
@@ -197,9 +209,9 @@ internal class Display
                     {
                         AppLogger.LogDebug("User choice: 'exit'");
                         AppLogger.LogDebug("Stop async UPDATE");
-                        ctsUpdateList.Cancel();
+                        _ctsUpdateList.Cancel();
                         AppLogger.LogDebug("Stop async DISPLAY");
-                        ctsDisplayList.Cancel();
+                        _ctsDisplayList.Cancel();
                     }
                     return;
 
@@ -212,56 +224,66 @@ internal class Display
 
         bool ProcessesFilter()
         {
-            AppLogger.LogDebug("FILTER: Start method: 'ProcessesFilter'");
-            Console.ResetColor();
-            Console.WriteLine();
-
-            AppLogger.LogDebug("FILTER: Draw filter options");
-            for (int i = 0; i < filterOptions.Length; i++)
-                Console.WriteLine(filterOptions[i]);
-
-            AppLogger.LogDebug("FILTER: Get user input");
-            ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
-            switch (consoleKey.Key)
+            while (true)
             {
-                case ConsoleKey.D1:
-                    AppLogger.LogDebug("FILTER: User choice: 'filter by name'");
-                    currentSortType = SortType.Name;
-                    DisplayEngine.SortByName(processes);
-                    return true;
+                AppLogger.LogDebug("FILTER: Start method: 'ProcessesFilter'");
+                AppLogger.LogDebug("FILTER: Display list FALSE");
+                _isDisplayList = false;
 
-                case ConsoleKey.D2:
-                    AppLogger.LogDebug("FILTER: User choice: 'filter by PID");
-                    currentSortType = SortType.PID;
-                    DisplayEngine.SortByPID(processes);
-                    return true;
+                Console.ResetColor();
+                Console.WriteLine();
 
-                case ConsoleKey.D3:
-                    AppLogger.LogDebug("FILTER: User choice: 'filter by Memory'");
-                    currentSortType = SortType.Memory;
-                    DisplayEngine.SortByMemory(processes);
-                    return true;
+                AppLogger.LogDebug("FILTER: Draw filter options");
+                for (int i = 0; i < filterOptions.Length; i++)
+                    Console.WriteLine(filterOptions[i]);
 
-                case ConsoleKey.D9:
-                    AppLogger.LogDebug("FILTER: User CHECK POINT");
-                    return true;
+                AppLogger.LogDebug("FILTER: Get user input");
+                ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+                switch (consoleKey.Key)
+                {
+                    case ConsoleKey.D1:
+                        AppLogger.LogDebug("FILTER: User choice: 'filter by name'");
+                        _currentSortType = SortType.Name;
+                        DisplayEngine.SortByName(_processes);
+                        return true;
 
-                case ConsoleKey.Backspace:
-                case ConsoleKey.Escape:
-                    {
-                        AppLogger.LogDebug("FILTER: User choice: 'exit'");
-                        ctsDisplayList = new CancellationTokenSource();
-                        taskDisplayList = ProcessesListAsync(ctsDisplayList);
-                    }
-                    return false;
+                    case ConsoleKey.D2:
+                        AppLogger.LogDebug("FILTER: User choice: 'filter by PID");
+                        _currentSortType = SortType.PID;
+                        DisplayEngine.SortByPID(_processes);
+                        return true;
 
-                default:
-                    AppLogger.LogDebug("Error: 'wrong input'");
-                    DisplayError(ErrorType.Wrong_Input);
-                    return true;
+                    case ConsoleKey.D3:
+                        AppLogger.LogDebug("FILTER: User choice: 'filter by Memory'");
+                        _currentSortType = SortType.Memory;
+                        DisplayEngine.SortByMemory(_processes);
+                        return true;
 
+                    case ConsoleKey.D9:
+                        AppLogger.LogDebug("FILTER: User CHECK POINT");
+                        return true;
+
+                    case ConsoleKey.Backspace:
+                    case ConsoleKey.Escape:
+                        {
+                            AppLogger.LogDebug("FILTER: User choice: 'exit'");
+                        }
+                        return false;
+
+                    default:
+                        {
+                            AppLogger.LogDebug("FILTER: Error: 'wrong input'");
+                            DisplayError(ErrorType.Wrong_Input);
+                            AppLogger.LogDebug("FILTER: Display list TRUE");
+                            _isDisplayList = true;
+                            Thread.Sleep(1000);
+                        }
+                        continue;
+                }
             }
         }
+
+        #region NotNow
 
         bool ProcessesManage()
         {
@@ -292,7 +314,7 @@ internal class Display
                     case ConsoleKey.D1:
                         {
                             AppLogger.LogDebug("MANAGER: User choice: 'kill process'");
-                            if (!DisplayEngine.KillProcess(processes, userIndex))
+                            if (!DisplayEngine.KillProcess(_processes, userIndex))
                                 DisplayError(ErrorType.Run_As_Administator);
                         }
                         return true;
@@ -300,7 +322,7 @@ internal class Display
                     case ConsoleKey.D2:
                         {
                             AppLogger.LogDebug("MANAGER: User choice: 'soft kill'");
-                            if (!DisplayEngine.CloseMainWindowProcess(processes, userIndex))
+                            if (!DisplayEngine.CloseMainWindowProcess(_processes, userIndex))
                                 DisplayError(ErrorType.Run_As_Administator);
                         }
                         return true;
@@ -308,7 +330,7 @@ internal class Display
                     case ConsoleKey.D3:
                         {
                             AppLogger.LogDebug("MANAGER: User choice: 'Open file directory'");
-                            if (!DisplayEngine.OpenFileDirectoryProcess(processes, userIndex))
+                            if (!DisplayEngine.OpenFileDirectoryProcess(_processes, userIndex))
                                 DisplayError(ErrorType.Run_As_Administator);
                         }
                         return true;
@@ -328,9 +350,7 @@ internal class Display
                     case ConsoleKey.Backspace:
                     case ConsoleKey.Escape:
                         {
-                            AppLogger.LogDebug("MANAGER: User choice: 'exit'");
-                            ctsDisplayList = new CancellationTokenSource();
-                            taskDisplayList = ProcessesListAsync(ctsDisplayList);
+                            AppLogger.LogDebug("MANAGER: User choice: 'exit'"); // TODO: EMPTY LOGIC
                         }
                         return false;
 
@@ -338,6 +358,7 @@ internal class Display
                         AppLogger.LogDebug("Error: 'wrong input'");
                         DisplayError(ErrorType.Wrong_Input);
                         return true;
+
                 }
             }
 
@@ -356,32 +377,32 @@ internal class Display
                     {
                         case ConsoleKey.D1:
                             AppLogger.LogDebug("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.RealTime);
+                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.RealTime);
                             return true;
 
                         case ConsoleKey.D2:
                             AppLogger.LogDebug("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.High);
+                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.High);
                             return true;
 
                         case ConsoleKey.D3:
                             AppLogger.LogDebug("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.AboveNormal);
+                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.AboveNormal);
                             return true;
 
                         case ConsoleKey.D4:
                             AppLogger.LogDebug("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.Normal);
+                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.Normal);
                             return true;
 
                         case ConsoleKey.D5:
                             AppLogger.LogDebug("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.BelowNormal);
+                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.BelowNormal);
                             return true;
 
                         case ConsoleKey.D6:
                             AppLogger.LogDebug("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(processes, userIndex, ProcessPriorityClass.Idle);
+                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.Idle);
                             return true;
 
                         case ConsoleKey.D9:
@@ -402,101 +423,110 @@ internal class Display
             }
         }
     }
+        #endregion
 
-    private async Task ProcessesListAsync(CancellationTokenSource tokenSource)
+    private async Task ProcessesListAsync(CancellationTokenSource tokenSource) // TODO: Переименовать
     {
         while (!tokenSource.Token.IsCancellationRequested)
         {
-            countOfPages = processes.Length / COUNT_PROCESSES_IN_PAGE;
-
-            if (processes.Length % 10 != 0)
-                countOfPages++;
-
-            AppLogger.LogDebug("ASYNC: Start method");
-            double totalMemoryUsage = 0;
-            var currentProcesses = processes;
-
-            AppLogger.LogDebug("ASYNC: Calculate page");
-            page = [..currentProcesses
-                .Skip(COUNT_PROCESSES_IN_PAGE * currentPage)
-                .Take(COUNT_PROCESSES_IN_PAGE)];
-
-            if (currentProcesses == null || currentProcesses.Length == 0)
+            if (_isDisplayList == true)
             {
-                AppLogger.LogDebug("ASYNC: We have get null array, await 50 ms to get not null array");
-                await Task.Delay(50);
-                continue;
-            }
+                _countOfPages = _processes.Length / _COUNT_PROCESSES_IN_PAGE;
 
-            AppLogger.LogDebug("ASYNC: lock display");
-            lock (locker)
-            {
-                AppLogger.LogDebug("ASYNC: Clear console");
-                Console.Clear();
-                AppLogger.LogDebug("ASYNC: Draw header");
-                Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage |'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
-                Console.WriteLine($"Current page: {currentPage + 1}|{countOfPages}\n\n");
+                if (_processes.Length % 10 != 0)
+                    _countOfPages++;
 
-                AppLogger.LogDebug("ASYNC: Draw global stats");
-                for (int i = 0; i < currentProcesses.Length; i++)
+                AppLogger.LogDebug("ASYNC: Start method");
+                double totalMemoryUsage = 0;
+                var currentProcesses = _processes;
+
+                AppLogger.LogDebug("ASYNC: Calculate page");
+                _page = [
+                    ..currentProcesses
+                .Skip(_COUNT_PROCESSES_IN_PAGE * _currentPage)
+                .Take(_COUNT_PROCESSES_IN_PAGE)
+                    ];
+
+                if (currentProcesses == null || currentProcesses.Length == 0)
                 {
-                    totalMemoryUsage += currentProcesses[i].PrivateMemorySize64 / (1024 * 1024);
-
-                    if (i == currentProcesses.Length - 1)
-                        Console.WriteLine($"Total memory usage: {totalMemoryUsage} | Count of processes: {currentProcesses.Length}");
+                    AppLogger.LogDebug("ASYNC: We have get null array, await 50 ms to get not null array");
+                    await Task.Delay(50);
+                    continue;
                 }
 
-                AppLogger.LogDebug("ASYNC: Draw processes");
-                for (int i = 0; i < page.Length; i++)
+                AppLogger.LogDebug("ASYNC: lock display");
+                lock (_locker)
                 {
-                    double memoryUsage = page[i].PrivateMemorySize64 / (1024 * 1024); // convert byte to MB
-                    string moduleFullNamePath = DisplayEngine.GetModuleFullName(page[i]);
-                    string nameExtension = Path.GetExtension(moduleFullNamePath);
-                    string processName = page[i].ProcessName;
-                    ConsoleColor currentColor;
+                    AppLogger.LogDebug("ASYNC: Clear console");
+                    Console.Clear();
+                    AppLogger.LogDebug("ASYNC: Draw header");
+                    Console.WriteLine("'Q' left | 'E' right | 'TAB' filter | '`' manage | 'ESC / BACKSPACE' exit", Console.ForegroundColor = ConsoleColor.Gray);
+                    Console.WriteLine($"Current page: {_currentPage + 1}|{_countOfPages}\n\n");
 
-                    if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
-                    else currentColor = ConsoleColor.Gray;
+                    AppLogger.LogDebug("ASYNC: Draw global stats");
+                    for (int i = 0; i < currentProcesses.Length; i++)
+                    {
+                        totalMemoryUsage += currentProcesses[i].PrivateMemorySize64 / (1024 * 1024);
 
-                    if (page[i].ProcessName.Length >= 25) processName = page[i].ProcessName[..22] + "..." + nameExtension;
-                    else processName += nameExtension;
+                        if (i == currentProcesses.Length - 1)
+                            Console.WriteLine($"Total memory usage: {totalMemoryUsage} | Count of processes: {currentProcesses.Length}");
+                    }
 
-                    Console.Write($"| CID: {currentProcesses.IndexOf(page[i]),-2} \t", Console.ForegroundColor = currentColor);
-                    Console.Write($"| Name: {processName,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
-                    Console.Write($"| PID: {page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
-                    Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
+                    AppLogger.LogDebug("ASYNC: Draw processes");
+                    for (int i = 0; i < _page.Length; i++)
+                    {
+                        double memoryUsage = _page[i].PrivateMemorySize64 / (1024 * 1024); // convert byte to MB
+                        string moduleFullNamePath = DisplayEngine.GetModuleFullName(_page[i]);
+                        string nameExtension = Path.GetExtension(moduleFullNamePath);
+                        string processName = _page[i].ProcessName;
+                        ConsoleColor currentColor;
+
+                        if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
+                        else currentColor = ConsoleColor.Gray;
+
+                        if (_page[i].ProcessName.Length >= 25) processName = _page[i].ProcessName[..22] + "..." + nameExtension;
+                        else processName += nameExtension;
+
+                        Console.Write($"| CID: {currentProcesses.IndexOf(_page[i]),-2} \t", Console.ForegroundColor = currentColor);
+                        Console.Write($"| Name: {processName,-25} \t", Console.ForegroundColor = ConsoleColor.Yellow);
+                        Console.Write($"| PID: {_page[i].Id,-5} \t", Console.ForegroundColor = currentColor);
+                        Console.Write($"| Memory: {memoryUsage} MB\n", Console.ForegroundColor = ConsoleColor.Green);
+                    }
+                    AppLogger.LogDebug("ASYNC: await 950 ms");
                 }
-                AppLogger.LogDebug("ASYNC: await 950 ms");
             }
             await Task.Delay(950);
         }
     }
 
-    private async Task UpdateProcessesAsync(CancellationTokenSource tokenSource)
+    #region NowNow2
+    private async Task UpdateProcessesAsync(CancellationTokenSource tokenSource) // TODO: перенос логики в Display Engine
     {
         while (!tokenSource.IsCancellationRequested)
         {
             AppLogger.LogDebug("ASYNC: Get processes");
-            processes = Process.GetProcesses();
+            _processes = Process.GetProcesses();
 
-            switch (currentSortType)
+            switch (_currentSortType)
             {
                 case SortType.Name:
                     AppLogger.LogDebug("ASYNC: Sort by name");
-                    DisplayEngine.SortByName(processes); break;
+                    DisplayEngine.SortByName(_processes); break;
                 case SortType.PID:
                     AppLogger.LogDebug("ASYNC: Sort be processor");
-                    DisplayEngine.SortByPID(processes); break;
+                    DisplayEngine.SortByPID(_processes); break;
                 case SortType.Memory:
                     AppLogger.LogDebug("ASYNC: Sort by memory");
-                    DisplayEngine.SortByMemory(processes); break;
+                    DisplayEngine.SortByMemory(_processes); break;
             }
-            AppLogger.LogDebug("ASYNC: await 900 ms");
-            await Task.Delay(900);
+
+            AppLogger.LogDebug("ASYNC: await 800 ms");
+            await Task.Delay(800);
         }
     }
+    #endregion
 
-    private static void DisplayError(ErrorType errorType)
+    async void DisplayError(ErrorType errorType)
     {
         AppLogger.LogDebug("Clear console");
         Console.Clear();
@@ -516,7 +546,8 @@ internal class Display
         }
 
         AppLogger.LogDebug("Sleep thread 1500ms");
-        Thread.Sleep(1500);
+        Thread.Sleep(1500); // TODO: Как убрать проблему что пользователь нажимает H после иждет sleep и если он нажимет H то после sleep нажимется H как убрать это c#
+        Console.Clear();
         Console.ResetColor();
     }
 }
