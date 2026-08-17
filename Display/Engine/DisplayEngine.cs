@@ -137,4 +137,10 @@ internal class DisplayEngine
         }
         return string.Empty;
     }
+    public static void BlockInputInThreadSleep(int milliseconds)
+    {
+        Thread.Sleep(milliseconds);
+        while (Console.KeyAvailable)
+            Console.ReadKey(true);
+    }
 }

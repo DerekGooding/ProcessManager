@@ -164,6 +164,7 @@ internal class Display
         {
             AppLogger.Log("Display list TRUE");
             _isDisplayList = true;
+            DisplayEngine.BlockInputInThreadSleep(1000);
             AppLogger.Log("Get user input");
 
 
@@ -213,8 +214,9 @@ internal class Display
 
                 default:
                     AppLogger.Log("Error: 'wrong input'");
+                    _isDisplayList = false;
                     DisplayError(ErrorType.Wrong_Input);
-                    break;
+                    continue;
             }
         }
 
@@ -272,12 +274,12 @@ internal class Display
                             DisplayError(ErrorType.Wrong_Input);
                             AppLogger.Log("FILTER: Display list TRUE");
                             _isDisplayList = true;
-                            Thread.Sleep(1000);
+                            DisplayEngine.BlockInputInThreadSleep(1000);
                         }
                         continue;
                 }
             }
-        }
+        } 
 
         #region NotNow
 
@@ -286,15 +288,20 @@ internal class Display
             while (true)
             {
                 AppLogger.Log("MANAGER: Start method: 'ProcessesManage'");
+                AppLogger.Log("MANAGER: Display list FALSE");
+                _isDisplayList = false;
+
                 Console.ResetColor();
                 AppLogger.Log("MANAGER: Get user input 'CID'");
-                Console.Write("Enter a CID: ");
+                Console.Write($"\nEnter a CID: ");
                 string? userIndexString = Console.ReadLine();
 
                 if (!DisplayEngine.InitNumber(userIndexString ?? String.Empty, out int userIndex))
                 {
                     AppLogger.Log("Error: 'wrong input'");
                     DisplayError(ErrorType.Wrong_Input);
+                    _isDisplayList = true;
+                    DisplayEngine.BlockInputInThreadSleep(1000);
                     continue;
                 }
 
@@ -346,15 +353,19 @@ internal class Display
                     case ConsoleKey.Backspace:
                     case ConsoleKey.Escape:
                         {
-                            AppLogger.Log("MANAGER: User choice: 'exit'"); // TODO: EMPTY LOGIC
+                            AppLogger.Log("MANAGER: User choice: 'exit'");
                         }
                         return false;
 
                     default:
-                        AppLogger.Log("Error: 'wrong input'");
-                        DisplayError(ErrorType.Wrong_Input);
-                        return true;
-
+                        {
+                            AppLogger.Log("FILTER: Error: 'wrong input'");
+                            DisplayError(ErrorType.Wrong_Input);
+                            AppLogger.Log("FILTER: Display list TRUE");
+                            _isDisplayList = true;
+                            DisplayEngine.BlockInputInThreadSleep(1000);
+                        }
+                        continue;
                 }
             }
 
@@ -421,36 +432,37 @@ internal class Display
     }
         #endregion
 
-    private async Task DisplayProcessesAsync(CancellationTokenSource tokenSource) // TODO: Переименовать
+    private async Task DisplayProcessesAsync(CancellationTokenSource tokenSource)
     {
+        AppLogger.Log("ASYNC: Start method");
         while (!tokenSource.Token.IsCancellationRequested)
         {
+            AppLogger.Log("ASYNC: Check access to display");
             if (_isDisplayList == true)
             {
+                AppLogger.Log("ASYNC: Acess aproved");
+
+                double totalMemoryUsage = 0;
+                var currentProcesses = _processes;
+
                 _countOfPages = _processes.Length / _COUNT_PROCESSES_IN_PAGE;
 
                 if (_processes.Length % 10 != 0)
                     _countOfPages++;
 
-                AppLogger.Log("ASYNC: Start method");
-                double totalMemoryUsage = 0;
-                var currentProcesses = _processes;
-
-                AppLogger.Log("ASYNC: Calculate page");
-                _page = [
-                    ..currentProcesses
+                _page = [ ..currentProcesses
                 .Skip(_COUNT_PROCESSES_IN_PAGE * _currentPage)
-                .Take(_COUNT_PROCESSES_IN_PAGE)
-                    ];
+                .Take(_COUNT_PROCESSES_IN_PAGE) ];
 
                 if (currentProcesses == null || currentProcesses.Length == 0)
                 {
-                    AppLogger.Log("ASYNC: We have get null array, await 50 ms to get not null array");
+                    AppLogger.Log("ASYNC: We have got null array, await 50 ms to get not null array");
                     await Task.Delay(50);
                     continue;
                 }
 
                 AppLogger.Log("ASYNC: lock display");
+
                 lock (_locker)
                 {
                     AppLogger.Log("ASYNC: Clear console");
@@ -496,7 +508,7 @@ internal class Display
     }
 
     #region NowNow2
-    private async Task UpdateProcessesAsync(CancellationTokenSource tokenSource) // TODO: перенос логики в Display Engine
+    private async Task UpdateProcessesAsync(CancellationTokenSource tokenSource) // TODO: перенос логики в Display Engine || На подумать!
     {
         while (!tokenSource.IsCancellationRequested)
         {
@@ -522,7 +534,7 @@ internal class Display
     }
     #endregion
 
-    async void DisplayError(ErrorType errorType)
+    private static void DisplayError(ErrorType errorType)
     {
         AppLogger.Log("Clear console");
         Console.Clear();
@@ -542,7 +554,7 @@ internal class Display
         }
 
         AppLogger.Log("Sleep thread 1500ms");
-        Thread.Sleep(1500); // TODO: Как убрать проблему что пользователь нажимает H после иждет sleep и если он нажимет H то после sleep нажимется H как убрать это c#
+        DisplayEngine.BlockInputInThreadSleep(1500);
         Console.Clear();
         Console.ResetColor();
     }
