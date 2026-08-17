@@ -7,7 +7,7 @@ public static class AppLogger
     private static readonly object _logLock = new object();
     private const string FilePath = "processManagerLog.txt";
 
-    public static void LogDebug(string message, [CallerMemberName] string callerName = "")
+    public static void Log(string message, [CallerMemberName] string callerName = "")
     {
         lock (_logLock)
         {

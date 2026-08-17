@@ -42,14 +42,14 @@ internal class DisplayEngine
     {
         try
         {
-            AppLogger.LogDebug("kill process engine");
+            AppLogger.Log("kill process engine");
             processes[index].Kill();
             return true;
         }
 
         catch (Win32Exception)
         {
-            AppLogger.LogDebug("Win 32 exception");
+            AppLogger.Log("Win 32 exception");
             return false;
         }
     }
@@ -58,14 +58,14 @@ internal class DisplayEngine
     {
         try
         {
-            AppLogger.LogDebug("soft close engine");
+            AppLogger.Log("soft close engine");
             processes[index].CloseMainWindow();
             return true;
         }
 
         catch (Win32Exception)
         {
-            AppLogger.LogDebug("Win 32 exception");
+            AppLogger.Log("Win 32 exception");
             return false;
         }
     }
@@ -74,7 +74,7 @@ internal class DisplayEngine
     {
         try
         {
-            AppLogger.LogDebug("get process full path engine");
+            AppLogger.Log("get process full path engine");
             string processFilePath = processes[index]?.MainModule?.FileName ?? String.Empty;
 
             if (processFilePath == String.Empty)
@@ -86,7 +86,7 @@ internal class DisplayEngine
 
         catch (Win32Exception)
         {
-            AppLogger.LogDebug("Win 32 exception");
+            AppLogger.Log("Win 32 exception");
             return false;
         }
     }
@@ -95,20 +95,20 @@ internal class DisplayEngine
     {
         try
         {
-            AppLogger.LogDebug("Change priority engine");
+            AppLogger.Log("Change priority engine");
             processes[index].PriorityClass = newPriority;
             return true;
         }
         catch (Win32Exception)
         {
-            AppLogger.LogDebug("Win 32 exception");
+            AppLogger.Log("Win 32 exception");
             return false;
         }
     }
 
     public static bool NumberInit(string stringEnter, out int value)
     {
-        AppLogger.LogDebug("Init user number");
+        AppLogger.Log("Init user number");
         if (!int.TryParse(stringEnter, out value)) return false;
         else return true;
     }
