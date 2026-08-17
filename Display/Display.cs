@@ -120,7 +120,7 @@ internal class Display
             }
 
             AppLogger.Log("Get user input");
-            ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+            ConsoleKeyInfo consoleKey = DisplayEngine.GetHiddenUserInput();
             switch (consoleKey.Key)
             {
                 case ConsoleKey.Enter:
@@ -145,7 +145,7 @@ internal class Display
                 case ConsoleKey.Backspace:
                 case ConsoleKey.Escape:
                     AppLogger.Log("User choice: 'exit'");
-                    DisplayEngine.Exit();
+                    DisplayEngine.ExitProgram();
                     break;
 
                 default:
@@ -167,7 +167,7 @@ internal class Display
             AppLogger.Log("Get user input");
 
 
-            _consoleKey = DisplayEngine.GetUserInput();
+            _consoleKey = DisplayEngine.GetHiddenUserInput();
             switch (_consoleKey.Key)
             {
                 case ConsoleKey.E:
@@ -234,25 +234,25 @@ internal class Display
                     Console.WriteLine(filterOptions[i]);
 
                 AppLogger.Log("FILTER: Get user input");
-                ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+                ConsoleKeyInfo consoleKey = DisplayEngine.GetHiddenUserInput();
                 switch (consoleKey.Key)
                 {
                     case ConsoleKey.D1:
                         AppLogger.Log("FILTER: User choice: 'filter by name'");
                         _currentSortType = SortType.Name;
-                        DisplayEngine.SortByName(_processes);
+                        DisplayEngine.SortProcessesByName(_processes);
                         return true;
 
                     case ConsoleKey.D2:
                         AppLogger.Log("FILTER: User choice: 'filter by PID");
                         _currentSortType = SortType.PID;
-                        DisplayEngine.SortByPID(_processes);
+                        DisplayEngine.SortProcessesByPID(_processes);
                         return true;
 
                     case ConsoleKey.D3:
                         AppLogger.Log("FILTER: User choice: 'filter by Memory'");
                         _currentSortType = SortType.Memory;
-                        DisplayEngine.SortByMemory(_processes);
+                        DisplayEngine.SortProcessesByMemory(_processes);
                         return true;
 
                     case ConsoleKey.D9:
@@ -291,7 +291,7 @@ internal class Display
                 Console.Write("Enter a CID: ");
                 string? userIndexString = Console.ReadLine();
 
-                if (!DisplayEngine.NumberInit(userIndexString ?? String.Empty, out int userIndex))
+                if (!DisplayEngine.InitNumber(userIndexString ?? String.Empty, out int userIndex))
                 {
                     AppLogger.Log("Error: 'wrong input'");
                     DisplayError(ErrorType.Wrong_Input);
@@ -304,7 +304,7 @@ internal class Display
 
                 Console.Write($"\nChoose option\n");
 
-                ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+                ConsoleKeyInfo consoleKey = DisplayEngine.GetHiddenUserInput();
                 switch (consoleKey.Key)
                 {
                     case ConsoleKey.D1:
@@ -368,37 +368,37 @@ internal class Display
                         Console.WriteLine(changePriorityOptions[i]);
 
                     AppLogger.Log("Get user input");
-                    ConsoleKeyInfo consoleKey = DisplayEngine.GetUserInput();
+                    ConsoleKeyInfo consoleKey = DisplayEngine.GetHiddenUserInput();
                     switch (consoleKey.Key)
                     {
                         case ConsoleKey.D1:
                             AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.RealTime);
+                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.RealTime);
                             return true;
 
                         case ConsoleKey.D2:
                             AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.High);
+                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.High);
                             return true;
 
                         case ConsoleKey.D3:
                             AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.AboveNormal);
+                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.AboveNormal);
                             return true;
 
                         case ConsoleKey.D4:
                             AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.Normal);
+                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Normal);
                             return true;
 
                         case ConsoleKey.D5:
                             AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.BelowNormal);
+                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.BelowNormal);
                             return true;
 
                         case ConsoleKey.D6:
                             AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangeProcessPriority(_processes, userIndex, ProcessPriorityClass.Idle);
+                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Idle);
                             return true;
 
                         case ConsoleKey.D9:
@@ -472,7 +472,7 @@ internal class Display
                     for (int i = 0; i < _page.Length; i++)
                     {
                         double memoryUsage = _page[i].PrivateMemorySize64 / (1024 * 1024); // convert byte to MB
-                        string moduleFullNamePath = DisplayEngine.GetModuleFullName(_page[i]);
+                        string moduleFullNamePath = DisplayEngine.GetProcessModuleFullName(_page[i]);
                         string nameExtension = Path.GetExtension(moduleFullNamePath);
                         string processName = _page[i].ProcessName;
                         ConsoleColor currentColor;
@@ -507,13 +507,13 @@ internal class Display
             {
                 case SortType.Name:
                     AppLogger.Log("ASYNC: Sort by name");
-                    DisplayEngine.SortByName(_processes); break;
+                    DisplayEngine.SortProcessesByName(_processes); break;
                 case SortType.PID:
                     AppLogger.Log("ASYNC: Sort be processor");
-                    DisplayEngine.SortByPID(_processes); break;
+                    DisplayEngine.SortProcessesByPID(_processes); break;
                 case SortType.Memory:
                     AppLogger.Log("ASYNC: Sort by memory");
-                    DisplayEngine.SortByMemory(_processes); break;
+                    DisplayEngine.SortProcessesByMemory(_processes); break;
             }
 
             AppLogger.Log("ASYNC: await 800 ms");

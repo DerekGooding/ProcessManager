@@ -17,24 +17,24 @@ internal class DisplayEngine
     [DllImport("kernel32.dll")]
     public static extern bool CloseHandle(IntPtr hProcess);
 
-    // ANDREW METHODS BELOW ===================================
+    // ===================================
 
-    public static void Exit() =>
+    public static void ExitProgram() =>
         Environment.Exit(0);
 
-    public static ConsoleKeyInfo GetUserInput()
+    public static ConsoleKeyInfo GetHiddenUserInput()
     {
         ConsoleKeyInfo userInput = Console.ReadKey(intercept: true);
         return userInput;
     }
 
-    public static void SortByName(Process[] processes) =>
+    public static void SortProcessesByName(Process[] processes) =>
         Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
 
-    public static void SortByPID(Process[] processes) =>
+    public static void SortProcessesByPID(Process[] processes) =>
         Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));
 
-    public static void SortByMemory(Process[] processes) =>
+    public static void SortProcessesByMemory(Process[] processes) =>
         Array.Sort(processes, (x, y) => y.PrivateMemorySize64.CompareTo(x.PrivateMemorySize64));
 
 
@@ -91,7 +91,7 @@ internal class DisplayEngine
         }
     }
 
-    public static bool СhangeProcessPriority(Process[] processes, int index, ProcessPriorityClass newPriority)
+    public static bool СhangePriorityProcess(Process[] processes, int index, ProcessPriorityClass newPriority)
     {
         try
         {
@@ -106,14 +106,14 @@ internal class DisplayEngine
         }
     }
 
-    public static bool NumberInit(string stringEnter, out int value)
+    public static bool InitNumber(string stringEnter, out int value)
     {
         AppLogger.Log("Init user number");
         if (!int.TryParse(stringEnter, out value)) return false;
         else return true;
     }
 
-    public static string GetModuleFullName(Process process)
+    public static string GetProcessModuleFullName(Process process)
     {
         int size = 512;
         var sb = new StringBuilder(size);
