@@ -5,12 +5,15 @@ using System.Diagnostics;
 
 namespace Process_Manager.Display;
 
+// TODO: Сделать меню, найти страницу ( пределы проверить )
 // TODO: Сделать рефактор логики.
 // TODO: Сделать новые логт, точнее проверить старые, может внести конкретику.
 
 internal class Display
 {
     private bool _isDisplayList = true;
+
+    private float _totalMemoryGB = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
 
     private const int _COUNT_PROCESSES_IN_PAGE = 20;
     private int _countOfPages;
@@ -192,7 +195,15 @@ internal class Display
                 case ConsoleKey.Tab:
                     {
                         AppLogger.Log("User choice: 'ProcessFilter'");
-                        if (FilterProcesses())
+                        if (!FilterProcesses()) // NOTE: Нет смысла в логике с !.
+                            continue;
+                    }
+                    break;
+
+                case ConsoleKey.F1:
+                    {
+                        AppLogger.Log("User choice: 'Search Page'");
+                        if (!SearchPage())
                             continue;
                     }
                     break;
@@ -279,9 +290,7 @@ internal class Display
                         continue;
                 }
             }
-        } 
-
-        #region NotNow
+        }
 
         bool ManageProcess()
         {
@@ -297,6 +306,15 @@ internal class Display
                 string? userIndexString = Console.ReadLine();
 
                 if (!DisplayEngine.InitNumber(userIndexString ?? String.Empty, out int userIndex))
+                {
+                    AppLogger.Log("Error: 'wrong input'");
+                    DisplayError(ErrorType.Wrong_Input);
+                    _isDisplayList = true;
+                    DisplayEngine.BlockInputInThreadSleep(1000);
+                    continue;
+                }
+
+                if (userIndex < 0 || userIndex > _processes.Length - 1)
                 {
                     AppLogger.Log("Error: 'wrong input'");
                     DisplayError(ErrorType.Wrong_Input);
@@ -368,69 +386,106 @@ internal class Display
                         continue;
                 }
             }
+        }
 
-            bool ChangePriority(int userIndex)
+
+        bool ChangePriority(int userIndex)
+        {
+            while (true)
             {
-                while (true)
+                AppLogger.Log("Start method: 'ChangePriority'");
+                AppLogger.Log("Draw options");
+                for (int i = 0; i < changePriorityOptions.Length; i++)
+                    Console.WriteLine(changePriorityOptions[i]);
+
+                AppLogger.Log("Get user input");
+                ConsoleKeyInfo consoleKey = DisplayEngine.GetHiddenUserInput();
+                switch (consoleKey.Key)
                 {
-                    AppLogger.Log("Start method: 'ChangePriority'");
-                    AppLogger.Log("Draw options");
-                    for (int i = 0; i < changePriorityOptions.Length; i++)
-                        Console.WriteLine(changePriorityOptions[i]);
+                    case ConsoleKey.D1:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.RealTime);
+                        return true;
 
-                    AppLogger.Log("Get user input");
-                    ConsoleKeyInfo consoleKey = DisplayEngine.GetHiddenUserInput();
-                    switch (consoleKey.Key)
-                    {
-                        case ConsoleKey.D1:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.RealTime);
-                            return true;
+                    case ConsoleKey.D2:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.High);
+                        return true;
 
-                        case ConsoleKey.D2:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.High);
-                            return true;
+                    case ConsoleKey.D3:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.AboveNormal);
+                        return true;
 
-                        case ConsoleKey.D3:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.AboveNormal);
-                            return true;
+                    case ConsoleKey.D4:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Normal);
+                        return true;
 
-                        case ConsoleKey.D4:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Normal);
-                            return true;
+                    case ConsoleKey.D5:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.BelowNormal);
+                        return true;
 
-                        case ConsoleKey.D5:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.BelowNormal);
-                            return true;
+                    case ConsoleKey.D6:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Idle);
+                        return true;
 
-                        case ConsoleKey.D6:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            DisplayEngine.СhangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Idle);
-                            return true;
+                    case ConsoleKey.D9:
+                        AppLogger.Log("User CHECK POINT");
+                        return true;
 
-                        case ConsoleKey.D9:
-                            AppLogger.Log("User CHECK POINT");
-                            return true;
+                    case ConsoleKey.Backspace:
+                    case ConsoleKey.Escape:
+                        AppLogger.Log("User choice: 'change priority RealTime'");
+                        return false;
 
-                        case ConsoleKey.Backspace:
-                        case ConsoleKey.Escape:
-                            AppLogger.Log("User choice: 'change priority RealTime'");
-                            return false;
-
-                        default:
-                            AppLogger.Log("Error: 'wrong input'");
-                            DisplayError(ErrorType.Wrong_Input);
-                            return true;
-                    }
+                    default:
+                        AppLogger.Log("Error: 'wrong input'");
+                        DisplayError(ErrorType.Wrong_Input);
+                        return true;
                 }
             }
         }
+
+
+        bool SearchPage()
+        {
+            while (true)
+            {
+                AppLogger.Log("SEARCH PAGE: Start method: 'Search Page'");
+                AppLogger.Log("SEARCH PAGE: Display list FALSE");
+                _isDisplayList = false;
+
+                Console.ResetColor();
+                AppLogger.Log("SEARCH PAGE: Get user input 'CID'");
+                Console.Write($"\nEnter a number of page: ");
+                string? userIndexString = Console.ReadLine();
+
+                if (!DisplayEngine.InitNumber(userIndexString ?? String.Empty, out int userIndex))
+                {
+                    AppLogger.Log("Error: 'wrong input'");
+                    DisplayError(ErrorType.Wrong_Input);
+                    _isDisplayList = true;
+                    DisplayEngine.BlockInputInThreadSleep(1000);
+                    continue;
+                }
+
+                if (userIndex < 0 || userIndex > _countOfPages)
+                {
+                    AppLogger.Log("Error: 'wrong input'");
+                    DisplayError(ErrorType.Wrong_Input);
+                    _isDisplayList = true;
+                    DisplayEngine.BlockInputInThreadSleep(1000);
+                    continue;
+                }
+
+                _currentPage = userIndex;
+                return false;
+            }
+        }
     }
-        #endregion
 
     private async Task DisplayProcessesAsync(CancellationTokenSource tokenSource)
     {
@@ -477,7 +532,7 @@ internal class Display
                         totalMemoryUsage += currentProcesses[i].PrivateMemorySize64 / (1024 * 1024);
 
                         if (i == currentProcesses.Length - 1)
-                            Console.WriteLine($"Total memory usage: {totalMemoryUsage} | Count of processes: {currentProcesses.Length}");
+                            Console.WriteLine($"Total memory usage: {totalMemoryUsage} / {_totalMemoryGB} GB | Count of processes: {currentProcesses.Length}");
                     }
 
                     AppLogger.Log("ASYNC: Draw processes");
@@ -507,7 +562,6 @@ internal class Display
         }
     }
 
-    #region NowNow2
     private async Task UpdateProcessesAsync(CancellationTokenSource tokenSource) // TODO: перенос логики в Display Engine || На подумать!
     {
         while (!tokenSource.IsCancellationRequested)
@@ -532,7 +586,6 @@ internal class Display
             await Task.Delay(800);
         }
     }
-    #endregion
 
     private static void DisplayError(ErrorType errorType)
     {
