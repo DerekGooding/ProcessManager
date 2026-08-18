@@ -31,7 +31,7 @@ internal class DisplayEngine
     public static void SortProcessesByName(Process[] processes) =>
         Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
 
-    public static void SortProcessesByPID(Process[] processes) =>
+    public static void SortProcessesByPid(Process[] processes) =>
         Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));
 
     public static void SortProcessesByMemory(Process[] processes) =>
