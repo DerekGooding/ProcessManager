@@ -1,4 +1,4 @@
-﻿using Process_Manager.Display;
+﻿using ProcessManager.Displays;
 
 namespace Process_manager;
 class Program

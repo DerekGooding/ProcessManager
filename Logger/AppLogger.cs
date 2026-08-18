@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Process_Manager.AppLoggeres;
+namespace ProcessManager.AppLoggeres;
 
 public static class AppLogger
 {

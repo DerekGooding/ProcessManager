@@ -1,11 +1,11 @@
-﻿namespace Process_manager.UiResources
+﻿namespace ProcessManager.UiResources
 {
     internal static class UiResource
     {
         public const string Logo = @"
                                 ..:                     
                                 .-:                     
-               -====             .*=         =--=       
+               -====             .*         =--=       
                :--+=-            =#+        ====        
                  -:: -           :%= ++    +*+##*       
                    :+           :**-+-   ++#%=*++       
