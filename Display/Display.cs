@@ -1,17 +1,13 @@
-﻿// TODO: Сделать рефактор логики.
+﻿// TODO: Сделать рефактор логики. ( SRP, DRY, KISS, check switch )
 // TODO: Сделать новые логи, точнее проверить старые, может внести конкретику и где то что то добавить.
-// TODO: Выпустить релиз приложения с log vers и без log просто vers
-// TODO: Написать README для приложения
-// TODO: Последний текст ну на послежней страницу если длина нового списка на послденей странице меньше прошло то старый элемент не удалиться  ( его не перепишет )
-// TODO: Block mouse in console ( later )
 
-using ProcessManager.Displays.Engine.DisplayHelpers;
-using ProcessManager.Displays.Engine.ConsoleHelpers;
-using ProcessManager.Displays.Engine.NativeMethodes;
-using ProcessManager.UiResources;
 using ProcessManager.AppLoggeres;
+using ProcessManager.Displays.Engine.ConsoleHelpers;
+using ProcessManager.Displays.Engine.DisplayHelpers;
+using ProcessManager.Displays.Engine.NativeMethodes;
 using ProcessManager.ErrorTypes;
 using ProcessManager.SortTypes;
+using ProcessManager.UiResources;
 using System.Diagnostics;
 
 namespace ProcessManager.Displays;
@@ -25,7 +21,8 @@ internal class Display
     private const int CountProcessesInPage = 20;
 
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
-    private readonly Lock _locker = new();
+    private readonly Lock _lockerUpdate = new();
+    private readonly Lock _lockerDisplay = new();
 
     private bool _isListDisplayed = true;
     private int _countOfPages;
@@ -121,7 +118,7 @@ internal class Display
             AppLogger.Log("Dispaly list");
 
             Console.Clear();
-            EnableDisplayList();
+            DisplayHelper.EnableDisplayList(ref _isListDisplayed);
 
             AppLogger.Log("Get user input");
 
@@ -167,7 +164,7 @@ internal class Display
                     return;
 
                 default:
-                    DisableDisplayList();
+                    DisplayHelper.DisableDisplayList(ref _isListDisplayed);
                     DisplayError(ErrorType.Wrong_Input);
                     continue;
             }
@@ -178,7 +175,7 @@ internal class Display
     {
         while (true)
         {
-            DisableDisplayList();
+            DisplayHelper.DisableDisplayList(ref _isListDisplayed);
 
             Console.ResetColor();
             Console.Write($"\nEnter a CID: ");
@@ -188,14 +185,14 @@ internal class Display
             if (!DisplayHelper.IsNumber(userIndexString, out int userIndex))
             {
                 DisplayError(ErrorType.Wrong_Input);
-                EnableDisplayList();
+                DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                 continue;
             }
 
             if (userIndex < 0 || userIndex > _processes.Length - 1) // TODO MARK
             {
                 DisplayError(ErrorType.Wrong_Input);
-                EnableDisplayList();
+                DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                 continue;
             }
 
@@ -249,7 +246,7 @@ internal class Display
 
                 default:
                     DisplayError(ErrorType.Wrong_Input);
-                    EnableDisplayList();
+                    DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                     continue;
             }
         }
@@ -315,7 +312,7 @@ internal class Display
 
                 default:
                     DisplayError(ErrorType.Wrong_Input);
-                    EnableDisplayList();
+                    DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                     continue;
             }
         }
@@ -325,7 +322,7 @@ internal class Display
     {
         while (true)
         {
-            DisableDisplayList();
+            DisplayHelper.DisableDisplayList(ref _isListDisplayed);
 
             Console.ResetColor();
             Console.Write($"\nEnter a number of page: ");
@@ -335,14 +332,14 @@ internal class Display
             if (!DisplayHelper.IsNumber(userIndexString ?? String.Empty, out int userIndex))
             {
                 DisplayError(ErrorType.Wrong_Input);
-                EnableDisplayList();
+                DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                 continue;
             }
 
             if (userIndex < 0 || userIndex > _countOfPages)
             {
                 DisplayError(ErrorType.Wrong_Input);
-                EnableDisplayList();
+                DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                 continue;
             }
 
@@ -355,7 +352,7 @@ internal class Display
     {
         while (true)
         {
-            DisableDisplayList();
+            DisplayHelper.DisableDisplayList(ref _isListDisplayed);
 
             Console.ResetColor();
             Console.WriteLine();
@@ -400,7 +397,7 @@ internal class Display
 
                 default:
                     DisplayError(ErrorType.Wrong_Input);
-                    EnableDisplayList();
+                    DisplayHelper.EnableDisplayList(ref _isListDisplayed);
                     continue;
             }
         }
@@ -412,22 +409,34 @@ internal class Display
         {
             if (_isListDisplayed)
             {
-                AppLogger.Log("ASYNC: if approved");
+                AppLogger.Log("ASYNC: Lock Check");
 
-                var currentProcesses = _processes;
-                float totalMemoryUsage = 0;
-
-                _countOfPages = _processes.Length / CountProcessesInPage;
-
-                _page = [ ..currentProcesses
-                .Skip(CountProcessesInPage * _currentPage)
-                .Take(CountProcessesInPage) ]; // TODO: Чекнуть можно ли куда перенести
-
-                AppLogger.Log("ASYNC: lock display");
-
-                lock (_locker)
+                lock (_lockerDisplay)
                 {
+                    AppLogger.Log("ASYNC: if approved");
+
+                    var currentProcesses = _processes;
+                    float totalMemoryUsage = 0;
+
+                    _countOfPages = _processes.Length / CountProcessesInPage;
+
+                    _page = [ ..currentProcesses
+                    .Skip(CountProcessesInPage * _currentPage)
+                    .Take(CountProcessesInPage) ]; // TODO: Чекнуть можно ли куда перенести
+
+                    AppLogger.Log("ASYNC: lock display");
+
                     Console.SetCursorPosition(0, 0);
+
+                    if(currentProcesses.Length % 20 == 0)
+                    {
+                        _countOfPages--;
+                    }
+
+                    if (_page.Length < CountProcessesInPage)
+                    {
+                        Console.Clear();
+                    }
 
                     AppLogger.Log("ASYNC: Draw header");
 
@@ -461,7 +470,6 @@ internal class Display
                         {
                             currentColor = ConsoleColor.DarkGray;
                         }
-
                         else
                         {
                             currentColor = ConsoleColor.Gray;
@@ -485,7 +493,7 @@ internal class Display
             }
             AppLogger.Log("ASYNC: await 950 ms");
 
-            await Task.Delay(950); // TODO: Check ignore tokel cancel by task delay
+            await Task.Delay(950, tokenSource.Token); // TODO:
         }
     }
 
@@ -493,33 +501,37 @@ internal class Display
     {
         while (!tokenSource.IsCancellationRequested)
         {
-            AppLogger.Log("ASYNC: Get processes");
-
-            _processes = Process.GetProcesses();
-
-            switch (_currentSortType)
+            lock (_lockerUpdate)
             {
-                case SortType.Name:
-                    AppLogger.Log("ASYNC: Sort by name");
+                AppLogger.Log("ASYNC: Get processes");
 
-                    DisplayHelper.SortProcessesByName(_processes);
-                    break;
+                _processes = Process.GetProcesses();
 
-                case SortType.PID:
-                    AppLogger.Log("ASYNC: Sort be processor");
+                switch (_currentSortType)
+                {
+                    case SortType.Name:
+                        AppLogger.Log("ASYNC: Sort by name");
 
-                    DisplayHelper.SortProcessesByPid(_processes);
-                    break;
+                        DisplayHelper.SortProcessesByName(_processes);
+                        break;
 
-                case SortType.Memory:
-                    AppLogger.Log("ASYNC: Sort by memory");
+                    case SortType.PID:
+                        AppLogger.Log("ASYNC: Sort be processor");
 
-                    DisplayHelper.SortProcessesByMemory(_processes);
-                    break;
+                        DisplayHelper.SortProcessesByPid(_processes);
+                        break;
+
+                    case SortType.Memory:
+                        AppLogger.Log("ASYNC: Sort by memory");
+
+                        DisplayHelper.SortProcessesByMemory(_processes);
+                        break;
+                }
             }
 
             AppLogger.Log("ASYNC: await 800 ms");
-            await Task.Delay(800);
+
+            await Task.Delay(800, tokenSource.Token);
         }
     }
 
@@ -555,16 +567,5 @@ internal class Display
         Console.ResetColor();
         ConsoleHelper.BlockInputInThreadSleep(1500);
         Console.Clear();
-    }
-
-    private void EnableDisplayList()
-    {
-        _isListDisplayed = true;
-        ConsoleHelper.BlockInputInThreadSleep(1060);
-    }
-
-    private void DisableDisplayList()
-    {
-        _isListDisplayed = false;
     }
 }
