@@ -5,6 +5,7 @@ using Process_manager.Engine;
 using Process_manager.Interfaces;
 using Process_manager.Model;
 using Process_manager.Module;
+using ProcessManager.AppLoggeres;
 using ProcessManager.ErrorTypes;
 using ProcessManager.SortTypes;
 using System.Diagnostics;
@@ -20,6 +21,7 @@ internal class AppPresenter
     private AutoResetEvent autoResetEvent = new AutoResetEvent(true);
     private CancellationTokenSource? _ctsDisplayList;
     private CancellationTokenSource? _ctsUpdateDataList;
+    private CancellationTokenSource? _ctsUpdateCountOfPages;
 
     private SortType _sortType = SortType.None;
     private IView _view;
@@ -29,7 +31,7 @@ internal class AppPresenter
     private int _currentPage = 0;
 
     private Process[] _processes = Process.GetProcesses();
-    private Process[] _page;
+    private Process[]? _page;
 
     public AppPresenter(IView view)
     {
@@ -54,12 +56,19 @@ internal class AppPresenter
         switch (consoleKey.Key)
         {
             case ConsoleKey.Enter:
+                AppLogger.Log("User choice: 'enter'");
+
+                _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage = 0);
+
                 _ctsUpdateDataList?.Dispose();
                 _ctsDisplayList?.Dispose();
+                _ctsUpdateCountOfPages?.Dispose();
 
                 _ctsUpdateDataList = new();
                 _ctsDisplayList = new();
+                _ctsUpdateCountOfPages = new();
 
+                _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPages.Token);
                 _ = UpdateProcessesAsync(_ctsUpdateDataList.Token);
                 _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, autoResetEvent);
 
@@ -68,13 +77,15 @@ internal class AppPresenter
 
             case ConsoleKey.Backspace:
             case ConsoleKey.Escape:
+                AppLogger.Log("User choice: 'exit'");
+
                 Environment.Exit(0);
                 break;
 
             default:
                 _view.DisplayError(ErrorType.Wrong_Input);
                 InputService.BlockInputInThreadSleep(1500);
-                _view.MainMenu(); // TODO: Связано с верхнгим todo по поводу цикла или повторного вызыва хотя тут может и повторный вызов а там везде цикл
+                _view.MainMenu();
                 break;
 
         }
@@ -82,42 +93,46 @@ internal class AppPresenter
 
     private void OnMainDisplayClickedMethod()
     {
-        Console.Clear();
-        EnableDisplayList();
-        ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-        switch (consoleKey.Key)
+        while (true)
         {
-            case ConsoleKey.E:
-                if (_currentPage < _countOfPages) _currentPage++;
-                break;
+            Console.Clear();
+            EnableDisplayList();
+            ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
-            case ConsoleKey.Q:
-                if (_currentPage > 0) _currentPage--;
-                break;
+            switch (consoleKey.Key)
+            {
+                case ConsoleKey.E:
+                    if (_currentPage < _countOfPages) _currentPage++;
+                    continue;
 
-            case ConsoleKey.Oem3:
-                _view.ManageProcess();
-                break;
+                case ConsoleKey.Q:
+                    if (_currentPage > 0) _currentPage--;
+                    continue;
 
-            case ConsoleKey.Tab:
-                _view.FilterProcesses();
-                break;
+                case ConsoleKey.Oem3:
+                    _view.ManageProcess();
+                    break;
 
-            case ConsoleKey.F1:
-                _view.SearchPage();
-                break;
+                case ConsoleKey.Tab:
+                    _view.FilterProcesses();
+                    break;
 
-            case ConsoleKey.Backspace:
-            case ConsoleKey.Escape:
-                _ctsUpdateDataList?.Cancel();
-                _ctsDisplayList?.Cancel();
-                return;
+                case ConsoleKey.F1:
+                    _view.SearchPage();
+                    break;
 
-            default:
-                DisableDisplayList();
-                _view.DisplayError(ErrorType.Wrong_Input);
-                break;
+                case ConsoleKey.Backspace:
+                case ConsoleKey.Escape:
+                    _ctsUpdateCountOfPages?.Cancel();
+                    _ctsUpdateDataList?.Cancel();
+                    _ctsDisplayList?.Cancel();
+                    return;
+
+                default:
+                    DisableDisplayList();
+                    _view.DisplayError(ErrorType.Wrong_Input);
+                    continue;
+            }
         }
     }
 
@@ -218,7 +233,7 @@ internal class AppPresenter
             ErrorHelper(ErrorType.Wrong_Input);
 
 
-        if (userIndex < 0 || userIndex > _countOfPages) // TODO: Вынести в отдельный метод наверно
+        if (userIndex < 0 || userIndex > _countOfPages)
             ErrorHelper(ErrorType.Wrong_Input);
 
 
@@ -269,16 +284,10 @@ internal class AppPresenter
         EnableDisplayList();
     }
 
-    private void UpdatePage()
-    {
-        _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
-
-        if (_page.Length < CountProcessesInPage)
-            _page = PageCalculator.FillPage(_page, CountProcessesInPage);
-    }
-
     private void HeaderHandler()
     {
+        CalculateMemoryUsage();
+
         _view.DrawHeader(_currentPage, _countOfPages);
         _view.DrawStats(_totalMemoryUsage, _totalMemoryGb, _processes.Length);
     }
@@ -300,10 +309,28 @@ internal class AppPresenter
             _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
     }
 
+    private void UpdatePage()
+    {
+        Process[] newPage = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
+
+        for(int i = 0; i < _page.Length; i++)
+        {
+            if(i > newPage.Length)
+                _page[i] = null;
+            else
+                _page[i] = newPage[i];                                  // TODO: Тут пришлось короче вручную копировать так что мейби в UpdateAsyncList
+                                                                        // ну типо таког ометоа там тоже шляпа поэтому не обноявляется.
+                                                                        // Сорян завтрашний я, что оставил тебе ну просто я ебал это делать это первое,
+                                                                        // а второе я ща мейби наделаю говно и ваообще че то мозг устал
+        }   
+    }
+
     private async Task UpdateProcessesAsync(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
+            AppLogger.Log("UPDATE ASYNC: start method");
+
             _processes = Process.GetProcesses();
 
             switch (_sortType)
@@ -320,7 +347,17 @@ internal class AppPresenter
                     ProcessService.SortProcessesByMemory(_processes);
                     break;
             }
+
             await Task.Delay(800, token);
+        }
+    }
+
+    private async Task UpdateCountOfPagesAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            _countOfPages = PageCalculator.CalculateCountOfPages(_processes, CountProcessesInPage);
+            await Task.Delay(800);
         }
     }
 }

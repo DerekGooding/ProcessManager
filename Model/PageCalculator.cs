@@ -18,12 +18,5 @@ namespace Process_manager.Model
 
             return _page;
         }
-
-        public static Process[] FillPage(Process[] page, int countProcessesInPage)
-        {
-            Array.Resize(ref page, countProcessesInPage);
-
-            return page;
-        }
     }
 }

@@ -33,11 +33,9 @@ internal class Display : IView
 
     public void MainMenu()
     {
-        AppLogger.Log("// - admin comments");
-        AppLogger.Log("");
+        AppLogger.Log("Draw main menu");
 
         Console.Clear();
-        AppLogger.Log("Draw main menu");
 
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.Write(UiResource.Logo);
@@ -127,19 +125,19 @@ internal class Display : IView
     {
         while (!token.IsCancellationRequested)
         {
+            AppLogger.Log("DISPLAY ASYNC: Start method");
+
             autoResetEvent.WaitOne();
 
             AsyncDisplayListPageHandler?.Invoke();
 
-            float totalMemoryUsage = 0;
-
-            AppLogger.Log("ASYNC: lock display");
-
             lock (_locker)
             {
+                AppLogger.Log("DISPLAY ASYNC: in lock");
                 Console.SetCursorPosition(0, 0);
 
                 Console.ForegroundColor = ConsoleColor.Gray;
+                
                 AsyncDisplayListHeaderHandler?.Invoke();
 
                 for (int i = 0; i < page.Length; i++)
@@ -166,7 +164,7 @@ internal class Display : IView
                     Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
                 }
             }
-
+            AppLogger.Log("DISPLAY ASYNC: await 950ms");
             await Task.Delay(950, token);
         }
     }
