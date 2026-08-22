@@ -1,6 +1,6 @@
-﻿namespace ProcessManager.Displays.Engine.ConsoleHelpers;
+﻿namespace Process_manager.Engine;
 
-internal class ConsoleHelper
+internal class InputService
 {
     public static ConsoleKeyInfo GetHiddenUserInput()
     {

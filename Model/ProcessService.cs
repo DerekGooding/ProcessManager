@@ -1,11 +1,8 @@
 ﻿using ProcessManager.AppLoggeres;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
 
-namespace Process_manager.Display.Engine.ProcessServices
+namespace Process_manager.Module
 {
     internal class ProcessService
     {

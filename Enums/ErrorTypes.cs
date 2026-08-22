@@ -1,9 +1,8 @@
-﻿namespace ProcessManager.ErrorTypes
+﻿namespace ProcessManager.ErrorTypes;
+
+public enum ErrorType : byte
 {
-    public enum ErrorType : byte
-    {
-        Unknown,
-        Wrong_Input,
-        Run_As_Administator,
-    }
+    Unknown,
+    Wrong_Input,
+    Run_As_Administator,
 }

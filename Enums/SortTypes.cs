@@ -1,10 +1,9 @@
-﻿namespace ProcessManager.SortTypes
+﻿namespace ProcessManager.SortTypes;
+
+public enum SortType : byte
 {
-    public enum SortType : byte
-    {
-        None,
-        Name,
-        PID,
-        Memory,
-    }
+    None,
+    Name,
+    Pid,
+    Memory,
 }
