@@ -6,6 +6,7 @@ namespace Process_manager.Interfaces;
 internal interface IView
 {
     event Action AsyncDisplayListHeaderHandler;
+    event Action<Process> AsyncDisplayListCheckPointerHandler;
     event Action<Process[]> AsyncDisplayListLoadDataHandler;
 
     event Action OnMenuClicked;
@@ -15,7 +16,7 @@ internal interface IView
     event Action OnSearchPageClicked;
     event Action<int> OnChangePriorityClicked;
 
-    async Task DisplayProcessesAsync(CancellationToken tokenSource, Process[] processes, ManualResetEvent manualResetEvent) { }
+    async Task DisplayProcessesAsync(CancellationToken token, Process[] processes, ManualResetEvent manualResetEvent) { }
 
     public void DisplayError(ErrorType errorType);
     void ChangePriority(int userIndex);
@@ -26,6 +27,7 @@ internal interface IView
     void ManageProcess();
     void EnterCid();
     void EnterNumberOfPage();
+    void DrawEmptyStroke();
     void DrawHeader(int currentPage, int countOfPages);
     void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses);
 }

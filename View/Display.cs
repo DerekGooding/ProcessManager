@@ -1,8 +1,4 @@
-﻿// TODO: Сделать рефактор логики.
-// TODO: Сделать новые логи, точнее проверить старые, может внести конкретику и где то что то добавить.
-// TODO: Namespace подправить если что
-
-using Process_manager.Engine;
+﻿using Process_manager.Engine;
 using Process_manager.Interfaces;
 using ProcessManager.AppLoggeres;
 using ProcessManager.ErrorTypes;
@@ -14,6 +10,7 @@ namespace ProcessManager.Displays;
 internal class Display : IView
 {
     public event Action<Process[]>? AsyncDisplayListLoadDataHandler;
+    public event Action<Process>? AsyncDisplayListCheckPointerHandler;
     public event Action? AsyncDisplayListHeaderHandler;
 
     public event Action? OnMenuClicked;
@@ -123,48 +120,56 @@ internal class Display : IView
 
     public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent)
     {
-        while (!token.IsCancellationRequested)
+        try
         {
-            AppLogger.Log("DISPLAY ASYNC: Start method");
-
-            AsyncDisplayListLoadDataHandler?.Invoke(page);
-            manualResetEvent.WaitOne();
-
-            lock (_locker)
+            while (!token.IsCancellationRequested)
             {
-                AppLogger.Log("DISPLAY ASYNC: in lock");
-                Console.SetCursorPosition(0, 0);
+                AppLogger.Log("DISPLAY ASYNC: Start method");
 
-                Console.ForegroundColor = ConsoleColor.Gray;
-                
-                AsyncDisplayListHeaderHandler?.Invoke();
+                AsyncDisplayListLoadDataHandler?.Invoke(page);
 
-                for (int i = 0; i < page.Length; i++)
+                manualResetEvent.WaitOne();
+
+                lock (_locker)
                 {
-                    ConsoleColor currentColor;
-                    string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(page[i]);
-                    string nameExtension = Path.GetExtension(moduleFullNamePath);
-                    string processName = page[i].ProcessName;
-                    float memoryUsage = page[i].PrivateMemorySize64 / (1024 * 1024);
+                    AppLogger.Log("DISPLAY ASYNC: in lock");
+                    Console.SetCursorPosition(0, 0);
 
-                    if (i % 2 == 0)
-                        currentColor = ConsoleColor.DarkGray;
-                    else
-                        currentColor = ConsoleColor.Gray;
+                    Console.ForegroundColor = ConsoleColor.Gray;
 
-                    if (page[i].ProcessName.Length >= 25)
-                        processName = page[i].ProcessName[..22] + "..." + nameExtension;
-                    else
-                        processName += nameExtension;
+                    AsyncDisplayListHeaderHandler?.Invoke();
 
-                    Console.Write($"| CID: {page.IndexOf(page[i]),-CidTextSpaceLimit} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
-                    Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-                    Console.Write($"| PID: {page[i].Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
-                    Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+                    for (int i = 0; i < page.Length; i++)
+                    {
+                        ConsoleColor currentColor;
+                        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(page[i]);
+                        string nameExtension = Path.GetExtension(moduleFullNamePath);
+                        string processName = page[i].ProcessName;
+                        float memoryUsage = page[i].PrivateMemorySize64 / (1024 * 1024);
+
+                        if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
+                        else currentColor = ConsoleColor.Gray;
+
+                        if (page[i].ProcessName.Length >= 25)
+                            processName = page[i].ProcessName[..22] + "..." + nameExtension;
+                        else
+                            processName += nameExtension;
+
+                        AsyncDisplayListCheckPointerHandler?.Invoke(page[i]); // TODO: HOW DOES IT WORK WHAT THE F**K! WHY IT CAN'T JUST PRINT FUCKING EMPTY STRING : ) damn..
+
+                        Console.Write($"| CID: {page.IndexOf(page[i]),-CidTextSpaceLimit} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
+                        Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
+                        Console.Write($"| PID: {page[i].Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
+                        Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+                    }
                 }
+                AppLogger.Log("DISPLAY ASYNC: await 950 ms");
+                await Task.Delay(950, token);
             }
-            AppLogger.Log("DISPLAY ASYNC: await 800ms");
-            await Task.Delay(800, token);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Log($"EXCEPTION: {ex.Message}, {ex.StackTrace}");
         }
     }
 
@@ -209,9 +214,14 @@ internal class Display : IView
         Console.WriteLine("'Q' left | 'E' right | 'F1' search page | 'TAB' filter | '`' manage | 'ESC / BACKSPACE' return");
         Console.WriteLine($"Current page: {currentPage}|{countOfPages}      \n\n");
     }
-        
+
     public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses)
     {
         Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
+    }
+
+    public void DrawEmptyStroke()
+    {
+        Console.WriteLine(UiResource.EmptyStroke);
     }
 }

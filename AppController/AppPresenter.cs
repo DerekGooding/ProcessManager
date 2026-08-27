@@ -9,6 +9,7 @@ using ProcessManager.AppLoggeres;
 using ProcessManager.ErrorTypes;
 using ProcessManager.SortTypes;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Process_manager.AppControlleres;
 
@@ -47,7 +48,7 @@ internal class AppPresenter
 
         view.AsyncDisplayListHeaderHandler += HeaderHandler;
         view.AsyncDisplayListLoadDataHandler += GetListData;
-
+        view.AsyncDisplayListCheckPointerHandler += CheckPointer;
     }
 
     private void OnMenuClickedMethod()
@@ -95,10 +96,11 @@ internal class AppPresenter
 
     private void OnMainDisplayClickedMethod()
     {
+        Console.Clear();
+        EnableDisplayList();
+
         while (true)
         {
-            Console.Clear();
-            EnableDisplayList();
             ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
             switch (consoleKey.Key)
@@ -300,19 +302,19 @@ internal class AppPresenter
 
     private void GetListData(Process[] page)
     {
-        Array.Copy(_page, page, _page.Length); 
+        Array.Copy(_page, page, _page.Length);
     }
 
-    private void EnableDisplayList()
+    private void EnableDisplayList([CallerMemberName] string callerName = "")
     {
-        AppLogger.Log("Enable display async");
+        AppLogger.Log($"[{callerName}] Enable display async");
         _manualResetEvent.Set();
         InputService.BlockInputInThreadSleep(1060);
     }
 
-    private void DisableDisplayList()
+    private void DisableDisplayList([CallerMemberName] string callerName = "")
     {
-        AppLogger.Log("Disable display async");
+        AppLogger.Log($"[{callerName}] Disable display async");
         _manualResetEvent.Reset();
     }
 
@@ -322,14 +324,21 @@ internal class AppPresenter
             _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
     }
 
+    private void CheckPointer(Process process)
+    {
+        if (NativeProcessService.CheckProcessPointer(process))
+        {
+            _view.DrawEmptyStroke();
+        }
+    }
+
     private async Task UpdateProcessesDataAsync(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
             AppLogger.Log("UPDATE ASYNC: start method");
-            
-            Process[] newProcesses = Process.GetProcesses();
-            Array.Copy(newProcesses, _processes, newProcesses.Length);
+
+            _processes = Process.GetProcesses();
 
             switch (_sortType)
             {
@@ -355,7 +364,7 @@ internal class AppPresenter
         while (!token.IsCancellationRequested)
         {
             _countOfPages = PageCalculator.CalculateCountOfPages(_processes, CountProcessesInPage);
-            await Task.Delay(780, token);
+            await Task.Delay(790, token);
         }
     }
 
@@ -364,7 +373,7 @@ internal class AppPresenter
         while (!token.IsCancellationRequested)
         {
             _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
-            await Task.Delay(790, token);
+            await Task.Delay(810, token);
         }
     }
 }
