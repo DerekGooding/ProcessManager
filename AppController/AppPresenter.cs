@@ -18,10 +18,10 @@ internal class AppPresenter
 
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
 
-    private AutoResetEvent autoResetEvent = new AutoResetEvent(true);
     private CancellationTokenSource? _ctsDisplayList;
     private CancellationTokenSource? _ctsUpdateDataList;
-    private CancellationTokenSource? _ctsUpdateCountOfPages;
+    private CancellationTokenSource? _ctsUpdateCountOfPage;
+    private CancellationTokenSource? _ctsUpdateDataPage;
 
     private SortType _sortType = SortType.None;
     private IView _view;
@@ -30,8 +30,9 @@ internal class AppPresenter
     private int _countOfPages;
     private int _currentPage = 0;
 
+    private ManualResetEvent _manualResetEvent = new ManualResetEvent(true);
     private Process[] _processes = Process.GetProcesses();
-    private Process[]? _page;
+    private Process[] _page;
 
     public AppPresenter(IView view)
     {
@@ -44,13 +45,18 @@ internal class AppPresenter
         view.OnSearchPageClicked += OnSearchPageClickedMethod;
         view.OnFilterProcessesClicked += OnFilterProcessesClickedMethod;
 
-        view.AsyncDisplayListPageHandler += UpdatePage;
         view.AsyncDisplayListHeaderHandler += HeaderHandler;
+        view.AsyncDisplayListLoadDataHandler += GetListData;
 
     }
 
     private void OnMenuClickedMethod()
     {
+        _ctsUpdateCountOfPage?.Dispose();
+        _ctsUpdateDataPage?.Dispose();
+        _ctsUpdateDataList?.Dispose();
+        _ctsDisplayList?.Dispose();
+
         ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
         switch (consoleKey.Key)
@@ -58,19 +64,15 @@ internal class AppPresenter
             case ConsoleKey.Enter:
                 AppLogger.Log("User choice: 'enter'");
 
-                _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage = 0);
-
-                _ctsUpdateDataList?.Dispose();
-                _ctsDisplayList?.Dispose();
-                _ctsUpdateCountOfPages?.Dispose();
-
                 _ctsUpdateDataList = new();
                 _ctsDisplayList = new();
-                _ctsUpdateCountOfPages = new();
+                _ctsUpdateCountOfPage = new();
+                _ctsUpdateDataPage = new();
 
-                _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPages.Token);
-                _ = UpdateProcessesAsync(_ctsUpdateDataList.Token);
-                _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, autoResetEvent);
+                _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
+                _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
+                _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
+                _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, _manualResetEvent);
 
                 _view.MainDisplay();
                 break;
@@ -123,9 +125,12 @@ internal class AppPresenter
 
                 case ConsoleKey.Backspace:
                 case ConsoleKey.Escape:
-                    _ctsUpdateCountOfPages?.Cancel();
+                    _ctsUpdateCountOfPage?.Cancel();
+                    _ctsUpdateDataPage?.Cancel();
                     _ctsUpdateDataList?.Cancel();
                     _ctsDisplayList?.Cancel();
+
+                    _view.MainDisplay();
                     return;
 
                 default:
@@ -286,21 +291,29 @@ internal class AppPresenter
 
     private void HeaderHandler()
     {
+        _totalMemoryUsage = 0;
         CalculateMemoryUsage();
 
         _view.DrawHeader(_currentPage, _countOfPages);
         _view.DrawStats(_totalMemoryUsage, _totalMemoryGb, _processes.Length);
     }
 
+    private void GetListData(Process[] page)
+    {
+        Array.Copy(_page, page, _page.Length); 
+    }
+
     private void EnableDisplayList()
     {
-        autoResetEvent.Set();
+        AppLogger.Log("Enable display async");
+        _manualResetEvent.Set();
         InputService.BlockInputInThreadSleep(1060);
     }
 
     private void DisableDisplayList()
     {
-        autoResetEvent.Reset();
+        AppLogger.Log("Disable display async");
+        _manualResetEvent.Reset();
     }
 
     private void CalculateMemoryUsage()
@@ -309,29 +322,14 @@ internal class AppPresenter
             _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
     }
 
-    private void UpdatePage()
-    {
-        Process[] newPage = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
-
-        for(int i = 0; i < _page.Length; i++)
-        {
-            if(i > newPage.Length)
-                _page[i] = null;
-            else
-                _page[i] = newPage[i];                                  // TODO: Тут пришлось короче вручную копировать так что мейби в UpdateAsyncList
-                                                                        // ну типо таког ометоа там тоже шляпа поэтому не обноявляется.
-                                                                        // Сорян завтрашний я, что оставил тебе ну просто я ебал это делать это первое,
-                                                                        // а второе я ща мейби наделаю говно и ваообще че то мозг устал
-        }   
-    }
-
-    private async Task UpdateProcessesAsync(CancellationToken token)
+    private async Task UpdateProcessesDataAsync(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
             AppLogger.Log("UPDATE ASYNC: start method");
-
-            _processes = Process.GetProcesses();
+            
+            Process[] newProcesses = Process.GetProcesses();
+            Array.Copy(newProcesses, _processes, newProcesses.Length);
 
             switch (_sortType)
             {
@@ -348,7 +346,7 @@ internal class AppPresenter
                     break;
             }
 
-            await Task.Delay(800, token);
+            await Task.Delay(770, token);
         }
     }
 
@@ -357,7 +355,16 @@ internal class AppPresenter
         while (!token.IsCancellationRequested)
         {
             _countOfPages = PageCalculator.CalculateCountOfPages(_processes, CountProcessesInPage);
-            await Task.Delay(800);
+            await Task.Delay(780, token);
+        }
+    }
+
+    private async Task UpdatePageAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
+            await Task.Delay(790, token);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace ProcessManager.Displays;
 
 internal class Display : IView
 {
-    public event Action? AsyncDisplayListPageHandler;
+    public event Action<Process[]>? AsyncDisplayListLoadDataHandler;
     public event Action? AsyncDisplayListHeaderHandler;
 
     public event Action? OnMenuClicked;
@@ -24,7 +24,7 @@ internal class Display : IView
     public event Action<int>? OnChangePriorityClicked;
 
     private const int CidTextSpaceLimit = 2;
-    private const int NameTextSpaceLimit = 26;
+    private const int NameTextSpaceLimit = 31;
     private const int PidTextSpaceLimit = 5;
     private const int MemoryTextSpaceLimit = 5;
     private const int TotalMemoryUsageTextSpaceLimit = 4;
@@ -110,7 +110,7 @@ internal class Display : IView
         OnSearchPageClicked?.Invoke();
     }
 
-    public void FilterProcesses()
+    public void FilterProcesses() // TODO: Тут корчое только invoke оставить, а for вынести в отдельный мето ди из presenter вызывать его передавать туда массив в слчае там switch выбора условно и тд тп
     {
         OnFilterProcessesClicked?.Invoke();
 
@@ -121,15 +121,14 @@ internal class Display : IView
         }
     }
 
-    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, AutoResetEvent autoResetEvent)
+    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent)
     {
         while (!token.IsCancellationRequested)
         {
             AppLogger.Log("DISPLAY ASYNC: Start method");
 
-            autoResetEvent.WaitOne();
-
-            AsyncDisplayListPageHandler?.Invoke();
+            AsyncDisplayListLoadDataHandler?.Invoke(page);
+            manualResetEvent.WaitOne();
 
             lock (_locker)
             {
@@ -164,8 +163,8 @@ internal class Display : IView
                     Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
                 }
             }
-            AppLogger.Log("DISPLAY ASYNC: await 950ms");
-            await Task.Delay(950, token);
+            AppLogger.Log("DISPLAY ASYNC: await 800ms");
+            await Task.Delay(800, token);
         }
     }
 

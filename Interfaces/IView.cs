@@ -5,8 +5,8 @@ namespace Process_manager.Interfaces;
 
 internal interface IView
 {
-    event Action AsyncDisplayListPageHandler;
     event Action AsyncDisplayListHeaderHandler;
+    event Action<Process[]> AsyncDisplayListLoadDataHandler;
 
     event Action OnMenuClicked;
     event Action OnMainDisplayClicked;
@@ -15,7 +15,7 @@ internal interface IView
     event Action OnSearchPageClicked;
     event Action<int> OnChangePriorityClicked;
 
-    async Task DisplayProcessesAsync(CancellationToken tokenSource, Process[] processes, AutoResetEvent autoResetEvent) { }
+    async Task DisplayProcessesAsync(CancellationToken tokenSource, Process[] processes, ManualResetEvent manualResetEvent) { }
 
     public void DisplayError(ErrorType errorType);
     void ChangePriority(int userIndex);

@@ -7,7 +7,7 @@ namespace Process_manager.Module
     internal class ProcessService
     {
         public static void SortProcessesByName(Process[] processes) =>
-        Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
+            Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
 
         public static void SortProcessesByPid(Process[] processes) =>
             Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));

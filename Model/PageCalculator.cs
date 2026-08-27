@@ -7,6 +7,12 @@ namespace Process_manager.Model
         public static int CalculateCountOfPages(Process[] processes, int countProcessesInPage)
         {
             int countOfPages = processes.Length / countProcessesInPage;
+
+            if (processes.Length % 20 != 0)
+            {
+                countOfPages++;
+            }
+
             return countOfPages;
         }
 
