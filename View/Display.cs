@@ -9,8 +9,8 @@ namespace ProcessManager.Displays;
 
 internal class Display : IView
 {
-    public event Action<Process[]>? AsyncDisplayListLoadDataHandler;
-    public event Action<Process>? AsyncDisplayListCheckPointerHandler;
+    public event Action<Process, ConsoleColor, int>? AsyncDisplayProcessCheckDataHandler;
+    public event Action<Process[]>? AsyncDisplayPageLoadDataHandler;
     public event Action? AsyncDisplayListHeaderHandler;
 
     public event Action? OnMenuClicked;
@@ -118,7 +118,7 @@ internal class Display : IView
         }
     }
 
-    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent)
+    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor)
     {
         try
         {
@@ -126,50 +126,35 @@ internal class Display : IView
             {
                 AppLogger.Log("DISPLAY ASYNC: Start method");
 
-                AsyncDisplayListLoadDataHandler?.Invoke(page);
-
-                manualResetEvent.WaitOne();
+                manualResetEvent.WaitOne(); // TODO: Узнать есть ли в этом смысл если у меня не один поток
 
                 lock (_locker)
                 {
-                    AppLogger.Log("DISPLAY ASYNC: in lock");
-                    Console.SetCursorPosition(0, 0);
+                    AsyncDisplayPageLoadDataHandler?.Invoke(page);
 
+                    AppLogger.Log("DISPLAY ASYNC: in lock");
+
+                    Console.SetCursorPosition(0, 0);
                     Console.ForegroundColor = ConsoleColor.Gray;
 
                     AsyncDisplayListHeaderHandler?.Invoke();
 
                     for (int i = 0; i < page.Length; i++)
                     {
-                        ConsoleColor currentColor;
-                        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(page[i]);
-                        string nameExtension = Path.GetExtension(moduleFullNamePath);
-                        string processName = page[i].ProcessName;
-                        float memoryUsage = page[i].PrivateMemorySize64 / (1024 * 1024);
-
                         if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
                         else currentColor = ConsoleColor.Gray;
 
-                        if (page[i].ProcessName.Length >= 25)
-                            processName = page[i].ProcessName[..22] + "..." + nameExtension;
-                        else
-                            processName += nameExtension;
-
-                        AsyncDisplayListCheckPointerHandler?.Invoke(page[i]); // TODO: HOW DOES IT WORK WHAT THE F**K! WHY IT CAN'T JUST PRINT FUCKING EMPTY STRING : ) damn..
-
-                        Console.Write($"| CID: {page.IndexOf(page[i]),-CidTextSpaceLimit} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
-                        Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-                        Console.Write($"| PID: {page[i].Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
-                        Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+                        AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i);
                     }
                 }
+
                 AppLogger.Log("DISPLAY ASYNC: await 950 ms");
                 await Task.Delay(950, token);
             }
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
-            AppLogger.Log($"EXCEPTION: {ex.Message}, {ex.StackTrace}");
+            AppLogger.Log($"{ex.Message}, {ex.StackTrace}"); // TODO: Убрать try catch
         }
     }
 
@@ -222,6 +207,24 @@ internal class Display : IView
 
     public void DrawEmptyStroke()
     {
-        Console.WriteLine(UiResource.EmptyStroke);
+        Console.Write($"{UiResource.EmptyStroke}\n");
+    }
+
+    public void DrawProcess(Process process, ConsoleColor currentColor, int index)
+    {
+            string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
+            string nameExtension = Path.GetExtension(moduleFullNamePath);
+            string processName = process.ProcessName;
+            float memoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
+
+            if (process.ProcessName.Length >= 25)
+                processName = process.ProcessName[..22] + "..." + nameExtension;
+            else
+                processName += nameExtension;
+
+            Console.Write($"| CID: {index} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
+            Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
+            Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
+            Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
     }
 }

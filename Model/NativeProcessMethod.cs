@@ -38,10 +38,9 @@ internal class NativeProcessService
         return string.Empty;
     }
 
-    public static bool CheckProcessPointer(Process process)
+    public static bool CheckProcessMemoryPointer(Process process)
     {
-        nint intPtr = OpenProcess(0x1000, false, process.Id);
-        if (intPtr == null)
+        if (process == null)
         {
             return true;
         }

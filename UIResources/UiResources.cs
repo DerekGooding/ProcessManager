@@ -2,7 +2,7 @@
 
 internal static class UiResource
 {
-    public const string EmptyStroke = "                                                                                                                                                       ";
+    public const string EmptyStroke = "                                                                                                                 ";
 
     public const string Logo = @"
                                 ..:                     

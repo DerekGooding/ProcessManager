@@ -24,6 +24,7 @@ internal class AppPresenter
     private CancellationTokenSource? _ctsUpdateCountOfPage;
     private CancellationTokenSource? _ctsUpdateDataPage;
 
+    private ConsoleColor _consoleColor = ConsoleColor.White;
     private SortType _sortType = SortType.None;
     private IView _view;
 
@@ -47,8 +48,8 @@ internal class AppPresenter
         view.OnFilterProcessesClicked += OnFilterProcessesClickedMethod;
 
         view.AsyncDisplayListHeaderHandler += HeaderHandler;
-        view.AsyncDisplayListLoadDataHandler += GetListData;
-        view.AsyncDisplayListCheckPointerHandler += CheckPointer;
+        view.AsyncDisplayPageLoadDataHandler += GetListData;
+        view.AsyncDisplayProcessCheckDataHandler += CheckMemoryPointer;
     }
 
     private void OnMenuClickedMethod()
@@ -73,7 +74,7 @@ internal class AppPresenter
                 _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
                 _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
                 _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
-                _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, _manualResetEvent);
+                _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, _manualResetEvent, _consoleColor);
 
                 _view.MainDisplay();
                 break;
@@ -324,11 +325,15 @@ internal class AppPresenter
             _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
     }
 
-    private void CheckPointer(Process process)
+    private void CheckMemoryPointer(Process process, ConsoleColor currentColor, int index)
     {
-        if (NativeProcessService.CheckProcessPointer(process))
+        if (NativeProcessService.CheckProcessMemoryPointer(process))
         {
             _view.DrawEmptyStroke();
+        }
+        else
+        {
+            _view.DrawProcess(process, currentColor, index);
         }
     }
 
