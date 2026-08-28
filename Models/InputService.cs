@@ -1,4 +1,4 @@
-﻿namespace Process_manager.Engine;
+﻿namespace ProcessManager.Models.InputServices;
 
 internal class InputService
 {

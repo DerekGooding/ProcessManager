@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Process_manager.Module
+namespace ProcessManager.Models.NativeConsoleMethods
 {
     internal class NativeConsoleMethod
     {

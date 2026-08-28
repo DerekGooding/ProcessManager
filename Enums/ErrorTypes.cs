@@ -1,4 +1,4 @@
-﻿namespace ProcessManager.ErrorTypes;
+﻿namespace ProcessManager.Enums.ErrorTypes;
 
 public enum ErrorType : byte
 {

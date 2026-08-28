@@ -1,55 +1,52 @@
-﻿// TODO: Как в main on clicked может вызывать метод а може тпросто while сюда завести что более вероятно логично
-// TODO: ПОправить namespace'ы
+﻿// TODO: сделать маленький рефактор логики
 
-using Process_manager.Engine;
-using Process_manager.Interfaces;
-using Process_manager.Model;
-using Process_manager.Module;
-using ProcessManager.AppLoggeres;
-using ProcessManager.ErrorTypes;
-using ProcessManager.SortTypes;
+using ProcessManager.Enums.ErrorTypes;
+using ProcessManager.Enums.SortTypes;
+using ProcessManager.Interfaces.Iviews;
+using ProcessManager.Loggers.AppLoggeres;
+using ProcessManager.Models.InputServices;
+using ProcessManager.Models.NativeProcessServices;
+using ProcessManager.Models.PageCalculators;
+using ProcessManager.Models.ProcessServices;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
-namespace Process_manager.AppControlleres;
+namespace ProcessManager.Presenters;
 
 internal class AppPresenter
 {
     private const int CountProcessesInPage = 20;
 
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
+    private readonly ManualResetEvent _manualResetEvent = new(true);
+    private readonly ConsoleColor _consoleColor = ConsoleColor.White;
+    private readonly IView _view;
 
     private CancellationTokenSource? _ctsDisplayList;
     private CancellationTokenSource? _ctsUpdateDataList;
     private CancellationTokenSource? _ctsUpdateCountOfPage;
     private CancellationTokenSource? _ctsUpdateDataPage;
+    private Process[]? _page;
 
-    private ConsoleColor _consoleColor = ConsoleColor.White;
     private SortType _sortType = SortType.None;
-    private IView _view;
-
     private float _totalMemoryUsage;
     private int _countOfPages;
     private int _currentPage = 0;
 
-    private ManualResetEvent _manualResetEvent = new ManualResetEvent(true);
     private Process[] _processes = Process.GetProcesses();
-    private Process[] _page;
 
     public AppPresenter(IView view)
     {
         _view = view;
 
         view.OnMenuClicked += OnMenuClickedMethod;
+        view.AsyncDisplayPageLoadDataHandler += GetListData;
+        view.AsyncDisplayListHeaderHandler += HeaderHandler;
+        view.OnSearchPageClicked += OnSearchPageClickedMethod;
         view.OnMainDisplayClicked += OnMainDisplayClickedMethod;
         view.OnManageProcessClicked += OnManageProcessClickedMethod;
         view.OnChangePriorityClicked += OnChangePriorityClickedMethod;
-        view.OnSearchPageClicked += OnSearchPageClickedMethod;
         view.OnFilterProcessesClicked += OnFilterProcessesClickedMethod;
-
-        view.AsyncDisplayListHeaderHandler += HeaderHandler;
-        view.AsyncDisplayPageLoadDataHandler += GetListData;
-        view.AsyncDisplayProcessCheckDataHandler += CheckMemoryPointer;
+        view.AsyncDisplayProcessCheckDataHandler += CheckProcessNamePointer;
     }
 
     private void OnMenuClickedMethod()
@@ -68,25 +65,21 @@ internal class AppPresenter
             switch (consoleKey.Key)
             {
                 case ConsoleKey.Enter:
-                    AppLogger.Log("User choice: 'enter'");
-
-                    _ctsUpdateDataList = new();
                     _ctsDisplayList = new();
+                    _ctsUpdateDataList = new();
                     _ctsUpdateCountOfPage = new();
                     _ctsUpdateDataPage = new();
 
-                    _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
                     _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
+                    _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
                     _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
-                    _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, _manualResetEvent, _consoleColor);
+                    _ = _view.DisplayProcessesAsync(_page, _manualResetEvent, _consoleColor, _ctsDisplayList.Token);
 
                     _view.MainDisplay();
                     break;
 
                 case ConsoleKey.Backspace:
                 case ConsoleKey.Escape:
-                    AppLogger.Log("User choice: 'exit'");
-
                     Environment.Exit(0);
                     break;
 
@@ -102,8 +95,8 @@ internal class AppPresenter
     {
         while (true)
         {
-            EnableDisplayList();
             Console.Clear();
+            EnableDisplayList();
 
             ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
@@ -273,6 +266,7 @@ internal class AppPresenter
         _view.FilterMemoryOptionsDraw();
 
         ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
+
         switch (consoleKey.Key)
         {
             case ConsoleKey.D1:
@@ -323,22 +317,16 @@ internal class AppPresenter
         _view.DrawStats(_totalMemoryUsage, _totalMemoryGb, _processes.Length);
     }
 
-    private void GetListData(Process[] page)
-    {
+    private void GetListData(Process[] page) =>
         Array.Copy(_page, page, _page.Length);
-    }
 
-    private void EnableDisplayList([CallerMemberName] string callerName = "")
+    private void DisableDisplayList() =>
+        _manualResetEvent.Reset();
+
+    private void EnableDisplayList()
     {
-        AppLogger.Log($"[{callerName}] Enable display async");
         _manualResetEvent.Set();
         InputService.BlockInputInThreadSleep(80);
-    }
-
-    private void DisableDisplayList([CallerMemberName] string callerName = "")
-    {
-        AppLogger.Log($"[{callerName}] Disable display async");
-        _manualResetEvent.Reset();
     }
 
     private void CalculateMemoryUsage()
@@ -347,16 +335,20 @@ internal class AppPresenter
             _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
     }
 
-    private void CheckMemoryPointer(Process process, ConsoleColor currentColor, int index)
+    //private void CalculateMemoryUsage()
+    //{
+    //    for (int i = 0; i < _processes.Length; i++)
+    //        _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
+    //}
+
+    // TODO: Мейби логику из display 1024 + 1024 сюда перенести
+
+    private void CheckProcessNamePointer(Process process, ConsoleColor currentColor, int index)
     {
-        if (NativeProcessService.CheckProcessMemoryPointer(process))
-        {
+        if (NativeProcessService.CheckProcessName(process))
             _view.DrawEmptyStroke();
-        }
         else
-        {
             _view.DrawProcess(process, currentColor, index);
-        }
     }
 
     private async Task UpdateProcessesDataAsync(CancellationToken token)
@@ -381,7 +373,6 @@ internal class AppPresenter
                     ProcessService.SortProcessesByMemory(ref _processes);
                     break;
             }
-
             await Task.Delay(770, token);
         }
     }

@@ -1,7 +1,6 @@
-﻿using Process_manager.Engine;
-using Process_manager.Interfaces;
-using ProcessManager.AppLoggeres;
-using ProcessManager.ErrorTypes;
+﻿using ProcessManager.Enums.ErrorTypes;
+using ProcessManager.Interfaces.Iviews;
+using ProcessManager.Models.NativeProcessServices;
 using ProcessManager.UiResources;
 using System.Diagnostics;
 
@@ -11,69 +10,56 @@ internal class Display : IView
 {
     public event Action<Process, ConsoleColor, int>? AsyncDisplayProcessCheckDataHandler;
     public event Action<Process[]>? AsyncDisplayPageLoadDataHandler;
-    public event Action? AsyncDisplayListHeaderHandler;
-
-    public event Action? OnMenuClicked;
-    public event Action? OnMainDisplayClicked;
-    public event Action? OnManageProcessClicked;
-    public event Action? OnFilterProcessesClicked;
-    public event Action? OnSearchPageClicked;
     public event Action<int>? OnChangePriorityClicked;
 
+    public event Action? AsyncDisplayListHeaderHandler;
+    public event Action? OnFilterProcessesClicked;
+    public event Action? OnManageProcessClicked;
+    public event Action? OnMainDisplayClicked;
+    public event Action? OnSearchPageClicked;
+    public event Action? OnMenuClicked;
+
+    private const int TotalMemoryUsageTextSpaceLimit = 4;
+    private const int MemoryTextSpaceLimit = 5;
+    private const int XPositionCursorLogo = 75;
+    private const int YPositionCursorLogo = 12;
     private const int NameTextSpaceLimit = 31;
     private const int PidTextSpaceLimit = 5;
-    private const int MemoryTextSpaceLimit = 5;
-    private const int TotalMemoryUsageTextSpaceLimit = 4;
 
     private readonly Lock _locker = new();
 
-    public void MainMenu()
-    {
+    private int _leftPartLengthLogo = 0;
+
+    public void MainMenu() =>
         OnMenuClicked?.Invoke();
-    }
 
-    public void MainDisplay()
-    {
+    public void MainDisplay() =>
         OnMainDisplayClicked?.Invoke();
-    }
 
-    public void ManageProcess()
-    {
+    public void ManageProcess() =>
         OnManageProcessClicked?.Invoke();
-    }
 
-    public void ChangePriority(int userIndex)
-    {
+    public void ChangePriority(int userIndex) =>
         OnChangePriorityClicked?.Invoke(userIndex);
-    }
 
-    public void SearchPage()
-    {
+    public void SearchPage() =>
         OnSearchPageClicked?.Invoke();
-    }
 
-    public void FilterProcesses() // TODO: Тут корчое только invoke оставить, а for вынести в отдельный мето ди из presenter вызывать его передавать туда массив в слчае там switch выбора условно и тд тп
-    {
+    public void FilterProcesses() =>
         OnFilterProcessesClicked?.Invoke();
-    }
 
-    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor)
+    public async Task DisplayProcessesAsync(Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor, CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
-            AppLogger.Log("DISPLAY ASYNC: Start method");
-
-            manualResetEvent.WaitOne(); // TODO: Узнать есть ли в этом смысл если у меня не один поток
+            manualResetEvent.WaitOne();
 
             lock (_locker)
             {
-                AsyncDisplayPageLoadDataHandler?.Invoke(page);
-
-                AppLogger.Log("DISPLAY ASYNC: in lock");
-
                 Console.SetCursorPosition(0, 0);
                 Console.ForegroundColor = ConsoleColor.Gray;
 
+                AsyncDisplayPageLoadDataHandler?.Invoke(page);
                 AsyncDisplayListHeaderHandler?.Invoke();
 
                 for (int i = 0; i < page.Length; i++)
@@ -84,8 +70,6 @@ internal class Display : IView
                     AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i);
                 }
             }
-
-            AppLogger.Log("DISPLAY ASYNC: await 950 ms");
             await Task.Delay(950, token);
         }
 
@@ -136,10 +120,8 @@ internal class Display : IView
         Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
     }
 
-    public void DrawEmptyStroke()
-    {
+    public void DrawEmptyStroke() =>
         Console.Write($"{UiResource.EmptyStroke}\n");
-    }
 
     public void DrawProcess(Process process, ConsoleColor currentColor, int index)
     {
@@ -158,6 +140,7 @@ internal class Display : IView
         Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
         Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
     }
+
     public void ManageOptionDraw()
     {
         Console.ResetColor();
@@ -193,31 +176,24 @@ internal class Display : IView
 
     public void MainMenuDraw()
     {
-        AppLogger.Log("Draw main menu");
-
         Console.Clear();
-
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.Write(UiResource.Logo);
         Console.ResetColor();
 
         for (int i = 0; i < UiResource.MenuOptions.Length; i++)
         {
-            int leftPartLength = 0;
-            int xPositionCursor = 75;
-            int yPositionCursor = 12;
-
-            Console.SetCursorPosition(xPositionCursor, yPositionCursor + i);
+            Console.SetCursorPosition(XPositionCursorLogo, YPositionCursorLogo + i);
 
             for (int j = 0; j < UiResource.MenuOptions[i].Length; j++)
             {
                 if (UiResource.MenuOptions[i][j] == ':')
                 {
-                    leftPartLength = j;
+                    _leftPartLengthLogo = j;
                 }
             }
 
-            for (int l = 0; l < leftPartLength; l++)
+            for (int l = 0; l < _leftPartLengthLogo; l++)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(UiResource.MenuOptions[i][l]);
@@ -225,12 +201,10 @@ internal class Display : IView
 
             Console.ResetColor();
 
-            for (int k = leftPartLength; k < UiResource.MenuOptions[i].Length; k++)
+            for (int k = _leftPartLengthLogo; k < UiResource.MenuOptions[i].Length; k++)
             {
                 Console.Write(UiResource.MenuOptions[i][k]);
             }
         }
-
-        AppLogger.Log("Get user input");
     }
 }

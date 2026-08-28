@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Process_manager.Engine;
+namespace ProcessManager.Models.NativeProcessServices;
 
 internal class NativeProcessService
 {
@@ -38,7 +38,7 @@ internal class NativeProcessService
         return string.Empty;
     }
 
-    public static bool CheckProcessMemoryPointer(Process process)
+    public static bool CheckProcessName(Process process)
     {
         if (process == null)
         {

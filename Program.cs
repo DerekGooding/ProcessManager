@@ -1,5 +1,5 @@
-﻿using Process_manager.AppControlleres;
-using Process_manager.Module;
+﻿using ProcessManager.Presenters;
+using ProcessManager.Models.NativeConsoleMethods;
 using ProcessManager.Displays;
 
 namespace Process_manager;

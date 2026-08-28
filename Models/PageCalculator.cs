@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Process_manager.Model
+namespace ProcessManager.Models.PageCalculators
 {
     internal class PageCalculator
     {
@@ -8,7 +8,7 @@ namespace Process_manager.Model
         {
             int countOfPages = processes.Length / countProcessesInPage;
 
-            if(processes.Length % 20  == 0)
+            if (processes.Length % 20 == 0)
             {
                 countOfPages--;
             }
