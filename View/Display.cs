@@ -1,6 +1,5 @@
 ﻿using ProcessManager.Enums.ErrorTypes;
 using ProcessManager.Interfaces.Iviews;
-using ProcessManager.Models.NativeProcessServices;
 using ProcessManager.UiResources;
 using System.Diagnostics;
 
@@ -50,9 +49,10 @@ internal class Display : IView
 
     public async Task DisplayProcessesAsync(Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor, CancellationToken token)
     {
+        //TODO: maybe delete this async method ( move in another place )
         while (!token.IsCancellationRequested)
         {
-            manualResetEvent.WaitOne();
+            manualResetEvent.WaitOne(); //TODO: Manual to another place
 
             lock (_locker)
             {
@@ -67,7 +67,7 @@ internal class Display : IView
                     if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
                     else currentColor = ConsoleColor.Gray;
 
-                    AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i);
+                    AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i); //TODO: 3 paragraph
                 }
             }
             await Task.Delay(950, token);
@@ -123,18 +123,8 @@ internal class Display : IView
     public void DrawEmptyStroke() =>
         Console.Write($"{UiResource.EmptyStroke}\n");
 
-    public void DrawProcess(Process process, ConsoleColor currentColor, int index)
+    public void DrawProcess(Process process, ConsoleColor currentColor, int index, float memoryUsage, string processName)
     {
-        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
-        string nameExtension = Path.GetExtension(moduleFullNamePath);
-        string processName = process.ProcessName;
-        float memoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
-
-        if (process.ProcessName.Length >= 25)
-            processName = process.ProcessName[..22] + "..." + nameExtension;
-        else
-            processName += nameExtension;
-
         Console.Write($"| CID: {index} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
         Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
         Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
@@ -207,4 +197,7 @@ internal class Display : IView
             }
         }
     }
+
+    public void ClearText() =>
+        Console.Clear();
 }

@@ -8,6 +8,12 @@ internal class InputService
         return userInput;
     }
 
+    public static string GetUserMultiInput()
+    {
+        string userInput = Console.ReadLine() ?? String.Empty;
+        return userInput;
+    }
+
     public static void BlockInputInThreadSleep(int milliseconds)
     {
         Thread.Sleep(milliseconds);

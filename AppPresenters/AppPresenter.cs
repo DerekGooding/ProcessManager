@@ -1,4 +1,4 @@
-﻿// TODO: сделать маленький рефактор логики
+﻿//TODO: Console class or console color try to replace
 
 using ProcessManager.Enums.ErrorTypes;
 using ProcessManager.Enums.SortTypes;
@@ -18,7 +18,7 @@ internal class AppPresenter
 
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
     private readonly ManualResetEvent _manualResetEvent = new(true);
-    private readonly ConsoleColor _consoleColor = ConsoleColor.White;
+    private readonly ConsoleColor _consoleColor = ConsoleColor.White; // TODO: to do with console in presenter. We don't know what is it.
     private readonly IView _view;
 
     private CancellationTokenSource? _ctsDisplayList;
@@ -28,7 +28,9 @@ internal class AppPresenter
     private Process[]? _page;
 
     private SortType _sortType = SortType.None;
+    private float _processMemoryUsage;
     private float _totalMemoryUsage;
+    private string _processName;
     private int _countOfPages;
     private int _currentPage = 0;
 
@@ -60,9 +62,7 @@ internal class AppPresenter
         {
             _view.MainMenuDraw();
 
-            ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-            switch (consoleKey.Key)
+            switch (InputService.GetHiddenUserInput().Key)
             {
                 case ConsoleKey.Enter:
                     _ctsDisplayList = new();
@@ -95,12 +95,10 @@ internal class AppPresenter
     {
         while (true)
         {
-            Console.Clear();
+            _view.ClearText();
             EnableDisplayList();
 
-            ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-            switch (consoleKey.Key)
+            switch (InputService.GetHiddenUserInput().Key)
             {
                 case ConsoleKey.E:
                     if (_currentPage < _countOfPages) _currentPage++;
@@ -144,9 +142,7 @@ internal class AppPresenter
 
         _view.EnterCid();
 
-        string userIndexString = Console.ReadLine() ?? String.Empty;
-
-        if (!int.TryParse(userIndexString, out int userIndex))
+        if (!int.TryParse(InputService.GetUserMultiInput(), out int userIndex))
         {
             ErrorHelper(ErrorType.Wrong_Input);
             return;
@@ -160,9 +156,7 @@ internal class AppPresenter
 
         _view.ManageOptionDraw();
 
-        ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-        switch (consoleKey.Key)
+        switch (InputService.GetHiddenUserInput().Key)
         {
             case ConsoleKey.D1:
                 if (!ProcessService.KillProcess(_processes, userIndex))
@@ -198,9 +192,7 @@ internal class AppPresenter
     {
         _view.ChangePriorityOptionDraw();
 
-        ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-        switch (consoleKey.Key)
+        switch (InputService.GetHiddenUserInput().Key)
         {
             case ConsoleKey.D1:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.RealTime);
@@ -242,9 +234,7 @@ internal class AppPresenter
 
         _view.EnterNumberOfPage();
 
-        string? userIndexString = Console.ReadLine();
-
-        if (!int.TryParse(userIndexString ?? String.Empty, out int userIndex))
+        if (!int.TryParse(InputService.GetUserMultiInput(), out int userIndex))
         {
             ErrorHelper(ErrorType.Wrong_Input);
             return;
@@ -265,9 +255,7 @@ internal class AppPresenter
 
         _view.FilterMemoryOptionsDraw();
 
-        ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-        switch (consoleKey.Key)
+        switch (InputService.GetHiddenUserInput().Key)
         {
             case ConsoleKey.D1:
                 _sortType = SortType.Name;
@@ -304,14 +292,14 @@ internal class AppPresenter
         }
 
         InputService.BlockInputInThreadSleep(1500);
-        Console.Clear();
+        _view.ClearText();
         EnableDisplayList();
     }
 
     private void HeaderHandler()
     {
         _totalMemoryUsage = 0;
-        CalculateMemoryUsage();
+        CalculateTotalMemoryUsage();
 
         _view.DrawHeader(_currentPage, _countOfPages);
         _view.DrawStats(_totalMemoryUsage, _totalMemoryGb, _processes.Length);
@@ -329,26 +317,38 @@ internal class AppPresenter
         InputService.BlockInputInThreadSleep(80);
     }
 
-    private void CalculateMemoryUsage()
+    private void CalculateTotalMemoryUsage()
     {
         for (int i = 0; i < _processes.Length; i++)
             _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
     }
 
-    //private void CalculateMemoryUsage()
-    //{
-    //    for (int i = 0; i < _processes.Length; i++)
-    //        _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
-    //}
+    private void BuildProcessName(Process process)
+    {
+        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
+        string nameExtension = Path.GetExtension(moduleFullNamePath);
+        _processName = process.ProcessName;
 
-    // TODO: Мейби логику из display 1024 + 1024 сюда перенести
+        if (process.ProcessName.Length >= 25)
+            _processName = process.ProcessName[..22] + "..." + nameExtension;
+        else
+            _processName += nameExtension;
+    }
+
+    private void CalcualteProcessMemoryUsage(Process process) =>
+        _processMemoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
 
     private void CheckProcessNamePointer(Process process, ConsoleColor currentColor, int index)
     {
         if (NativeProcessService.CheckProcessName(process))
             _view.DrawEmptyStroke();
         else
-            _view.DrawProcess(process, currentColor, index);
+        {
+            BuildProcessName(process);
+            CalcualteProcessMemoryUsage(process);
+
+            _view.DrawProcess(process, currentColor, index, _processMemoryUsage, _processName);
+        }
     }
 
     private async Task UpdateProcessesDataAsync(CancellationToken token)

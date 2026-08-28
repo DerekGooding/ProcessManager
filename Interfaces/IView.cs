@@ -18,8 +18,8 @@ internal interface IView
 
     async Task DisplayProcessesAsync(Process[] processes, ManualResetEvent manualResetEvent, ConsoleColor currentColor, CancellationToken token) { }
 
+    void DrawProcess(Process process, ConsoleColor currentColor, int index, float memoryUsage, string processName);
     void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses);
-    void DrawProcess(Process process, ConsoleColor currentColor, int index);
     void DrawHeader(int currentPage, int countOfPages);
     void DisplayError(ErrorType errorType);
     void ChangePriority(int userIndex);
@@ -34,6 +34,7 @@ internal interface IView
     void MainMenuDraw();
     void MainDisplay();
     void SearchPage();
+    void ClearText();
     void MainMenu();
     void EnterCid();
 }

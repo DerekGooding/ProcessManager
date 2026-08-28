@@ -1,8 +1,9 @@
-﻿using ProcessManager.Presenters;
+﻿using ProcessManager.Displays;
 using ProcessManager.Models.NativeConsoleMethods;
-using ProcessManager.Displays;
+using ProcessManager.Presenters;
 
 namespace Process_manager;
+
 class Program
 {
     static void Main()
