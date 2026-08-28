@@ -59,49 +59,52 @@ internal class AppPresenter
         _ctsUpdateDataList?.Dispose();
         _ctsDisplayList?.Dispose();
 
-        ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
-
-        switch (consoleKey.Key)
+        while (true)
         {
-            case ConsoleKey.Enter:
-                AppLogger.Log("User choice: 'enter'");
+            _view.MainMenuDraw();
 
-                _ctsUpdateDataList = new();
-                _ctsDisplayList = new();
-                _ctsUpdateCountOfPage = new();
-                _ctsUpdateDataPage = new();
+            ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
-                _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
-                _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
-                _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
-                _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, _manualResetEvent, _consoleColor);
+            switch (consoleKey.Key)
+            {
+                case ConsoleKey.Enter:
+                    AppLogger.Log("User choice: 'enter'");
 
-                _view.MainDisplay();
-                break;
+                    _ctsUpdateDataList = new();
+                    _ctsDisplayList = new();
+                    _ctsUpdateCountOfPage = new();
+                    _ctsUpdateDataPage = new();
 
-            case ConsoleKey.Backspace:
-            case ConsoleKey.Escape:
-                AppLogger.Log("User choice: 'exit'");
+                    _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
+                    _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
+                    _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
+                    _ = _view.DisplayProcessesAsync(_ctsDisplayList.Token, _page, _manualResetEvent, _consoleColor);
 
-                Environment.Exit(0);
-                break;
+                    _view.MainDisplay();
+                    break;
 
-            default:
-                _view.DisplayError(ErrorType.Wrong_Input);
-                InputService.BlockInputInThreadSleep(1500);
-                _view.MainMenu();
-                break;
+                case ConsoleKey.Backspace:
+                case ConsoleKey.Escape:
+                    AppLogger.Log("User choice: 'exit'");
 
+                    Environment.Exit(0);
+                    break;
+
+                default:
+                    _view.DisplayError(ErrorType.Wrong_Input);
+                    InputService.BlockInputInThreadSleep(1500);
+                    continue;
+            }
         }
     }
 
     private void OnMainDisplayClickedMethod()
     {
-        Console.Clear();
-        EnableDisplayList();
-
         while (true)
         {
+            EnableDisplayList();
+            Console.Clear();
+
             ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
             switch (consoleKey.Key)
@@ -115,15 +118,15 @@ internal class AppPresenter
                     continue;
 
                 case ConsoleKey.Oem3:
-                    _view.ManageProcess();
+                    OnManageProcessClickedMethod();
                     break;
 
                 case ConsoleKey.Tab:
-                    _view.FilterProcesses();
+                    OnFilterProcessesClickedMethod();
                     break;
 
                 case ConsoleKey.F1:
-                    _view.SearchPage();
+                    OnSearchPageClickedMethod();
                     break;
 
                 case ConsoleKey.Backspace:
@@ -132,8 +135,6 @@ internal class AppPresenter
                     _ctsUpdateDataPage?.Cancel();
                     _ctsUpdateDataList?.Cancel();
                     _ctsDisplayList?.Cancel();
-
-                    _view.MainDisplay();
                     return;
 
                 default:
@@ -151,13 +152,23 @@ internal class AppPresenter
         _view.EnterCid();
 
         string userIndexString = Console.ReadLine() ?? String.Empty;
+
         if (!int.TryParse(userIndexString, out int userIndex))
+        {
             ErrorHelper(ErrorType.Wrong_Input);
+            return;
+        }
 
         if (userIndex < 0 || userIndex > _processes.Length - 1)
+        {
             ErrorHelper(ErrorType.Wrong_Input);
+            return;
+        }
+
+        _view.ManageOptionDraw();
 
         ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
+
         switch (consoleKey.Key)
         {
             case ConsoleKey.D1:
@@ -176,7 +187,7 @@ internal class AppPresenter
                 return;
 
             case ConsoleKey.D4:
-                _view.ChangePriority(userIndex);
+                OnChangePriorityClickedMethod(userIndex);
                 return;
 
             case ConsoleKey.Backspace:
@@ -185,12 +196,15 @@ internal class AppPresenter
 
             default:
                 ErrorHelper(ErrorType.Wrong_Input);
-                break;
+                return;
         }
+
     }
 
     private void OnChangePriorityClickedMethod(int userIndex)
     {
+        _view.ChangePriorityOptionDraw();
+
         ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
 
         switch (consoleKey.Key)
@@ -238,12 +252,16 @@ internal class AppPresenter
         string? userIndexString = Console.ReadLine();
 
         if (!int.TryParse(userIndexString ?? String.Empty, out int userIndex))
+        {
             ErrorHelper(ErrorType.Wrong_Input);
-
+            return;
+        }
 
         if (userIndex < 0 || userIndex > _countOfPages)
+        {
             ErrorHelper(ErrorType.Wrong_Input);
-
+            return;
+        }
 
         _currentPage = userIndex;
     }
@@ -252,22 +270,24 @@ internal class AppPresenter
     {
         DisableDisplayList();
 
+        _view.FilterMemoryOptionsDraw();
+
         ConsoleKeyInfo consoleKey = InputService.GetHiddenUserInput();
         switch (consoleKey.Key)
         {
             case ConsoleKey.D1:
                 _sortType = SortType.Name;
-                ProcessService.SortProcessesByName(_processes);
+                ProcessService.SortProcessesByName(ref _processes);
                 return;
 
             case ConsoleKey.D2:
                 _sortType = SortType.Pid;
-                ProcessService.SortProcessesByPid(_processes);
+                ProcessService.SortProcessesByPid(ref _processes);
                 return;
 
             case ConsoleKey.D3:
                 _sortType = SortType.Memory;
-                ProcessService.SortProcessesByMemory(_processes);
+                ProcessService.SortProcessesByMemory(ref _processes);
                 return;
 
             case ConsoleKey.Backspace:
@@ -276,7 +296,8 @@ internal class AppPresenter
 
             default:
                 ErrorHelper(ErrorType.Wrong_Input);
-                break;
+                return;
+
         }
     }
 
@@ -284,11 +305,12 @@ internal class AppPresenter
     {
         switch (errorType)
         {
-            case ErrorType.Wrong_Input: _view.DisplayError(ErrorType.Wrong_Input); break;
-            case ErrorType.Run_As_Administator: _view.DisplayError(ErrorType.Wrong_Input); break;
+            case ErrorType.Wrong_Input: _view.DisplayError(errorType); break;
+            case ErrorType.Run_As_Administator: _view.DisplayError(errorType); break;
         }
 
         InputService.BlockInputInThreadSleep(1500);
+        Console.Clear();
         EnableDisplayList();
     }
 
@@ -310,7 +332,7 @@ internal class AppPresenter
     {
         AppLogger.Log($"[{callerName}] Enable display async");
         _manualResetEvent.Set();
-        InputService.BlockInputInThreadSleep(1060);
+        InputService.BlockInputInThreadSleep(80);
     }
 
     private void DisableDisplayList([CallerMemberName] string callerName = "")
@@ -348,15 +370,15 @@ internal class AppPresenter
             switch (_sortType)
             {
                 case SortType.Name:
-                    ProcessService.SortProcessesByName(_processes);
+                    ProcessService.SortProcessesByName(ref _processes);
                     break;
 
                 case SortType.Pid:
-                    ProcessService.SortProcessesByPid(_processes);
+                    ProcessService.SortProcessesByPid(ref _processes);
                     break;
 
                 case SortType.Memory:
-                    ProcessService.SortProcessesByMemory(_processes);
+                    ProcessService.SortProcessesByMemory(ref _processes);
                     break;
             }
 

@@ -6,13 +6,13 @@ namespace Process_manager.Module
 {
     internal class ProcessService
     {
-        public static void SortProcessesByName(Process[] processes) =>
+        public static void SortProcessesByName(ref Process[] processes) =>
             Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
 
-        public static void SortProcessesByPid(Process[] processes) =>
+        public static void SortProcessesByPid(ref Process[] processes) =>
             Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));
 
-        public static void SortProcessesByMemory(Process[] processes) =>
+        public static void SortProcessesByMemory(ref Process[] processes) =>
             Array.Sort(processes, (x, y) => y.PrivateMemorySize64.CompareTo(x.PrivateMemorySize64));
 
 

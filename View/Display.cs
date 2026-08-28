@@ -20,7 +20,6 @@ internal class Display : IView
     public event Action? OnSearchPageClicked;
     public event Action<int>? OnChangePriorityClicked;
 
-    private const int CidTextSpaceLimit = 2;
     private const int NameTextSpaceLimit = 31;
     private const int PidTextSpaceLimit = 5;
     private const int MemoryTextSpaceLimit = 5;
@@ -29,6 +28,170 @@ internal class Display : IView
     private readonly Lock _locker = new();
 
     public void MainMenu()
+    {
+        OnMenuClicked?.Invoke();
+    }
+
+    public void MainDisplay()
+    {
+        OnMainDisplayClicked?.Invoke();
+    }
+
+    public void ManageProcess()
+    {
+        OnManageProcessClicked?.Invoke();
+    }
+
+    public void ChangePriority(int userIndex)
+    {
+        OnChangePriorityClicked?.Invoke(userIndex);
+    }
+
+    public void SearchPage()
+    {
+        OnSearchPageClicked?.Invoke();
+    }
+
+    public void FilterProcesses() // TODO: Тут корчое только invoke оставить, а for вынести в отдельный мето ди из presenter вызывать его передавать туда массив в слчае там switch выбора условно и тд тп
+    {
+        OnFilterProcessesClicked?.Invoke();
+    }
+
+    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            AppLogger.Log("DISPLAY ASYNC: Start method");
+
+            manualResetEvent.WaitOne(); // TODO: Узнать есть ли в этом смысл если у меня не один поток
+
+            lock (_locker)
+            {
+                AsyncDisplayPageLoadDataHandler?.Invoke(page);
+
+                AppLogger.Log("DISPLAY ASYNC: in lock");
+
+                Console.SetCursorPosition(0, 0);
+                Console.ForegroundColor = ConsoleColor.Gray;
+
+                AsyncDisplayListHeaderHandler?.Invoke();
+
+                for (int i = 0; i < page.Length; i++)
+                {
+                    if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
+                    else currentColor = ConsoleColor.Gray;
+
+                    AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i);
+                }
+            }
+
+            AppLogger.Log("DISPLAY ASYNC: await 950 ms");
+            await Task.Delay(950, token);
+        }
+
+    }
+
+    public void DisplayError(ErrorType errorType)
+    {
+        Console.Clear();
+        Console.ForegroundColor = ConsoleColor.Red;
+
+        switch (errorType)
+        {
+            case ErrorType.Run_As_Administator:
+                Console.WriteLine("Error #1: Try to run the program as administrator");
+                break;
+
+            case ErrorType.Wrong_Input:
+                Console.WriteLine("Error #2: Wrong input, make sure you have entered it correctly.");
+                break;
+
+            default:
+                Console.WriteLine("Error #404: Unknown error");
+                break;
+        }
+        Console.ResetColor();
+    }
+
+    public void EnterCid()
+    {
+        Console.ResetColor();
+        Console.Write($"\nEnter a CID: ");
+    }
+
+    public void EnterNumberOfPage()
+    {
+        Console.ResetColor();
+        Console.Write($"\nEnter a number of page: ");
+    }
+
+    public void DrawHeader(int currentPage, int countOfPages)
+    {
+        Console.WriteLine("'Q' left | 'E' right | 'F1' search page | 'TAB' filter | '`' manage | 'ESC / BACKSPACE' return");
+        Console.WriteLine($"Current page: {currentPage}|{countOfPages}      \n\n");
+    }
+
+    public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses)
+    {
+        Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
+    }
+
+    public void DrawEmptyStroke()
+    {
+        Console.Write($"{UiResource.EmptyStroke}\n");
+    }
+
+    public void DrawProcess(Process process, ConsoleColor currentColor, int index)
+    {
+        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
+        string nameExtension = Path.GetExtension(moduleFullNamePath);
+        string processName = process.ProcessName;
+        float memoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
+
+        if (process.ProcessName.Length >= 25)
+            processName = process.ProcessName[..22] + "..." + nameExtension;
+        else
+            processName += nameExtension;
+
+        Console.Write($"| CID: {index} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
+        Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
+        Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
+        Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+    }
+    public void ManageOptionDraw()
+    {
+        Console.ResetColor();
+        Console.WriteLine();
+
+        for (int i = 0; i < UiResource.ProcessOptions.Length; i++)
+        {
+            Console.WriteLine(UiResource.ProcessOptions[i]);
+        }
+    }
+
+    public void ChangePriorityOptionDraw()
+    {
+        Console.ResetColor();
+        Console.WriteLine();
+
+        for (int i = 0; i < UiResource.ChangePriorityOptions.Length; i++)
+        {
+            Console.WriteLine(UiResource.ChangePriorityOptions[i]);
+        }
+    }
+
+    public void FilterMemoryOptionsDraw()
+    {
+        Console.ResetColor();
+        Console.WriteLine();
+
+        for (int i = 0; i < UiResource.FilterOptions.Length; i++)
+        {
+            Console.WriteLine(UiResource.FilterOptions[i]);
+        }
+    }
+
+    public void MainMenuDraw()
     {
         AppLogger.Log("Draw main menu");
 
@@ -69,162 +232,5 @@ internal class Display : IView
         }
 
         AppLogger.Log("Get user input");
-        OnMenuClicked?.Invoke();
-
-    }
-
-    public void MainDisplay()
-    {
-        OnMainDisplayClicked?.Invoke();
-    }
-
-    public void ManageProcess()
-    {
-
-        OnManageProcessClicked?.Invoke();
-
-        for (int i = 0; i < UiResource.ProcessOptions.Length; i++)
-        {
-            Console.WriteLine(UiResource.ProcessOptions[i]);
-        }
-
-    }
-
-    public void ChangePriority(int userIndex)
-    {
-
-        OnChangePriorityClicked?.Invoke(userIndex);
-
-        for (int i = 0; i < UiResource.ChangePriorityOptions.Length; i++)
-        {
-            Console.WriteLine(UiResource.ChangePriorityOptions[i]);
-        }
-
-    }
-
-    public void SearchPage()
-    {
-        OnSearchPageClicked?.Invoke();
-    }
-
-    public void FilterProcesses() // TODO: Тут корчое только invoke оставить, а for вынести в отдельный мето ди из presenter вызывать его передавать туда массив в слчае там switch выбора условно и тд тп
-    {
-        OnFilterProcessesClicked?.Invoke();
-
-        Console.WriteLine();
-        for (int i = 0; i < UiResource.FilterOptions.Length; i++)
-        {
-            Console.WriteLine(UiResource.FilterOptions[i]);
-        }
-    }
-
-    public async Task DisplayProcessesAsync(CancellationToken token, Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor)
-    {
-        try
-        {
-            while (!token.IsCancellationRequested)
-            {
-                AppLogger.Log("DISPLAY ASYNC: Start method");
-
-                manualResetEvent.WaitOne(); // TODO: Узнать есть ли в этом смысл если у меня не один поток
-
-                lock (_locker)
-                {
-                    AsyncDisplayPageLoadDataHandler?.Invoke(page);
-
-                    AppLogger.Log("DISPLAY ASYNC: in lock");
-
-                    Console.SetCursorPosition(0, 0);
-                    Console.ForegroundColor = ConsoleColor.Gray;
-
-                    AsyncDisplayListHeaderHandler?.Invoke();
-
-                    for (int i = 0; i < page.Length; i++)
-                    {
-                        if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
-                        else currentColor = ConsoleColor.Gray;
-
-                        AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i);
-                    }
-                }
-
-                AppLogger.Log("DISPLAY ASYNC: await 950 ms");
-                await Task.Delay(950, token);
-            }
-        }
-        catch(Exception ex)
-        {
-            AppLogger.Log($"{ex.Message}, {ex.StackTrace}"); // TODO: Убрать try catch
-        }
-    }
-
-    public void DisplayError(ErrorType errorType)
-    {
-        Console.Clear();
-        Console.ForegroundColor = ConsoleColor.Red;
-
-        switch (errorType)
-        {
-            case ErrorType.Run_As_Administator:
-                Console.WriteLine("Error #1: Try to run the program as administrator");
-                break;
-
-            case ErrorType.Wrong_Input:
-                Console.WriteLine("Error #2: Wrong input, make sure you have entered it correctly.");
-                break;
-
-            default:
-                Console.WriteLine("Error #404: Unknown error");
-                break;
-        }
-
-        Console.ResetColor();
-        Console.Clear();
-    }
-
-    public void EnterCid()
-    {
-        Console.ResetColor();
-        Console.Write($"\nEnter a CID: ");
-    }
-
-    public void EnterNumberOfPage()
-    {
-        Console.ResetColor();
-        Console.Write($"\nEnter a number of page: ");
-    }
-
-    public void DrawHeader(int currentPage, int countOfPages)
-    {
-        Console.WriteLine("'Q' left | 'E' right | 'F1' search page | 'TAB' filter | '`' manage | 'ESC / BACKSPACE' return");
-        Console.WriteLine($"Current page: {currentPage}|{countOfPages}      \n\n");
-    }
-
-    public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses)
-    {
-        Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
-    }
-
-    public void DrawEmptyStroke()
-    {
-        Console.Write($"{UiResource.EmptyStroke}\n");
-    }
-
-    public void DrawProcess(Process process, ConsoleColor currentColor, int index)
-    {
-            string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
-            string nameExtension = Path.GetExtension(moduleFullNamePath);
-            string processName = process.ProcessName;
-            float memoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
-
-            if (process.ProcessName.Length >= 25)
-                processName = process.ProcessName[..22] + "..." + nameExtension;
-            else
-                processName += nameExtension;
-
-            Console.Write($"| CID: {index} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
-            Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-            Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
-            Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
     }
 }

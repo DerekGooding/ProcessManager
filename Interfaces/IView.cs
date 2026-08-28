@@ -31,4 +31,8 @@ internal interface IView
     void DrawHeader(int currentPage, int countOfPages);
     void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses);
     void DrawProcess(Process process, ConsoleColor currentColor, int index);
+    void ManageOptionDraw();
+    void ChangePriorityOptionDraw();
+    void FilterMemoryOptionsDraw();
+    void MainMenuDraw();
 }
