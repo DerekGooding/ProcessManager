@@ -2,9 +2,11 @@
 
 using ProcessManager.Enums.ErrorTypes;
 using ProcessManager.Enums.SortTypes;
+using ProcessManager.Enums.VirtualKeyTypes;
 using ProcessManager.Interfaces.Iviews;
 using ProcessManager.Loggers.AppLoggeres;
 using ProcessManager.Models.InputServices;
+using ProcessManager.Models.NativeConsoleMethods;
 using ProcessManager.Models.PageCalculators;
 using ProcessManager.Models.ProcessServices;
 using ProcessManager.Structs;
@@ -57,9 +59,9 @@ internal class AppPresenter
         {
             _view.MainMenuDraw();
 
-            switch (InputService.GetHiddenUserInput().Key)
+            switch (NativeConsoleMethod.GetHiddenUserInput())
             {
-                case ConsoleKey.Enter:
+                case VirtualKeyType.VK_RETURN:
                     _ctsDisplayList = new();
                     _ctsUpdateDataList = new();
                     _ctsUpdateCountOfPage = new();
@@ -73,8 +75,8 @@ internal class AppPresenter
                     _view.MainDisplay();
                     break;
 
-                case ConsoleKey.Backspace:
-                case ConsoleKey.Escape:
+                case VirtualKeyType.VK_BACK:
+                case VirtualKeyType.VK_ESCAPE:
                     Environment.Exit(0);
                     break;
 
@@ -93,30 +95,30 @@ internal class AppPresenter
             _view.ClearText();
             EnableDisplayList();
 
-            switch (InputService.GetHiddenUserInput().Key)
+            switch (NativeConsoleMethod.GetHiddenUserInput())
             {
-                case ConsoleKey.E:
+                case VirtualKeyType.VK_E:
                     if (_currentPage < _countOfPages) _currentPage++;
                     continue;
 
-                case ConsoleKey.Q:
+                case VirtualKeyType.VK_Q:
                     if (_currentPage > 0) _currentPage--;
                     continue;
 
-                case ConsoleKey.Oem3:
+                case VirtualKeyType.VK_OEM_3:
                     OnManageProcessClickedMethod();
                     break;
 
-                case ConsoleKey.Tab:
+                case VirtualKeyType.VK_TAB:
                     OnFilterProcessesClickedMethod();
                     break;
 
-                case ConsoleKey.F1:
+                case VirtualKeyType.VK_F1:
                     OnSearchPageClickedMethod();
                     break;
 
-                case ConsoleKey.Backspace:
-                case ConsoleKey.Escape:
+                case VirtualKeyType.VK_BACK:
+                case VirtualKeyType.VK_ESCAPE:
                     _ctsUpdateCountOfPage?.Cancel();
                     _ctsUpdateDataPage?.Cancel();
                     _ctsUpdateDataList?.Cancel();
@@ -151,70 +153,69 @@ internal class AppPresenter
 
         _view.ManageOptionDraw();
 
-        switch (InputService.GetHiddenUserInput().Key)
+        switch (NativeConsoleMethod.GetHiddenUserInput())
         {
-            case ConsoleKey.D1:
+            case VirtualKeyType.VK_1:
                 if (!ProcessService.KillProcess(_processes, userIndex))
                     ErrorHelper(ErrorType.Run_As_Administator);
                 return;
 
-            case ConsoleKey.D2:
+            case VirtualKeyType.VK_2:
                 if (!ProcessService.CloseMainWindowProcess(_processes, userIndex))
                     ErrorHelper(ErrorType.Run_As_Administator);
                 return;
 
-            case ConsoleKey.D3:
+            case VirtualKeyType.VK_3:
                 if (!ProcessService.OpenFileDirectoryProcess(_processes, userIndex))
                     ErrorHelper(ErrorType.Run_As_Administator);
                 return;
 
-            case ConsoleKey.D4:
+            case VirtualKeyType.VK_4:
                 OnChangePriorityClickedMethod(userIndex);
                 return;
 
-            case ConsoleKey.Backspace:
-            case ConsoleKey.Escape:
+            case VirtualKeyType.VK_BACK:
+            case VirtualKeyType.VK_ESCAPE:
                 return;
 
             default:
                 ErrorHelper(ErrorType.Wrong_Input);
                 return;
         }
-
     }
 
     private void OnChangePriorityClickedMethod(int userIndex)
     {
         _view.ChangePriorityOptionDraw();
 
-        switch (InputService.GetHiddenUserInput().Key)
+        switch (NativeConsoleMethod.GetHiddenUserInput())
         {
-            case ConsoleKey.D1:
+            case VirtualKeyType.VK_1:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.RealTime);
                 return;
 
-            case ConsoleKey.D2:
+            case VirtualKeyType.VK_2:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.High);
                 return;
 
-            case ConsoleKey.D3:
+            case VirtualKeyType.VK_3:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.AboveNormal);
                 return;
 
-            case ConsoleKey.D4:
+            case VirtualKeyType.VK_4:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Normal);
                 return;
 
-            case ConsoleKey.D5:
+            case VirtualKeyType.VK_5:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.BelowNormal);
                 return;
 
-            case ConsoleKey.D6:
+            case VirtualKeyType.VK_6:
                 ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Idle);
                 return;
 
-            case ConsoleKey.Backspace:
-            case ConsoleKey.Escape:
+            case VirtualKeyType.VK_BACK:
+            case VirtualKeyType.VK_ESCAPE:
                 return;
 
             default:
@@ -250,25 +251,25 @@ internal class AppPresenter
 
         _view.FilterMemoryOptionsDraw();
 
-        switch (InputService.GetHiddenUserInput().Key)
+        switch (NativeConsoleMethod.GetHiddenUserInput())
         {
-            case ConsoleKey.D1:
+            case VirtualKeyType.VK_1:
                 _sortType = SortType.Name;
                 ProcessService.SortProcessesByName(ref _processes);
                 return;
 
-            case ConsoleKey.D2:
+            case VirtualKeyType.VK_2:
                 _sortType = SortType.Pid;
                 ProcessService.SortProcessesByPid(ref _processes);
                 return;
 
-            case ConsoleKey.D3:
+            case VirtualKeyType.VK_3:
                 _sortType = SortType.Memory;
                 ProcessService.SortProcessesByMemory(ref _processes);
                 return;
 
-            case ConsoleKey.Backspace:
-            case ConsoleKey.Escape:
+            case VirtualKeyType.VK_BACK:
+            case VirtualKeyType.VK_ESCAPE:
                 return;
 
             default:
