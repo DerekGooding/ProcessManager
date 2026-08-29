@@ -1,16 +1,13 @@
-﻿//TODO: Console class or console color try to replace
-//TODO: Move async to here
-//TODO: Check algorithm of each item filter to array display at the same time
-//TODO: Check nameplate of all of them fields and methods
+﻿//TODO: Convert console read line read key to the DLL import VK_SPACE = 0x20 or sohmething like that; ( medium )
 
 using ProcessManager.Enums.ErrorTypes;
 using ProcessManager.Enums.SortTypes;
 using ProcessManager.Interfaces.Iviews;
 using ProcessManager.Loggers.AppLoggeres;
 using ProcessManager.Models.InputServices;
-using ProcessManager.Models.NativeProcessServices;
 using ProcessManager.Models.PageCalculators;
 using ProcessManager.Models.ProcessServices;
+using ProcessManager.Structs;
 using System.Diagnostics;
 
 namespace ProcessManager.Presenters;
@@ -19,21 +16,19 @@ internal class AppPresenter
 {
     private const int CountProcessesInPage = 20;
 
-    private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
     private readonly ManualResetEvent _manualResetEvent = new(true);
     private readonly Lock _locker = new();
     private readonly IView _view;
+    private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
 
     private CancellationTokenSource? _ctsDisplayList;
     private CancellationTokenSource? _ctsUpdateDataList;
     private CancellationTokenSource? _ctsUpdateCountOfPage;
     private CancellationTokenSource? _ctsUpdateDataPage;
     private Process[]? _page;
+    private List<ProcessStruct> _processesList = new();
 
     private SortType _sortType = SortType.None;
-    private float _processMemoryUsage;
-    private float _totalMemoryUsage;
-    private string _processName;
     private int _countOfPages;
     private int _currentPage = 0;
 
@@ -44,7 +39,6 @@ internal class AppPresenter
         _view = view;
 
         view.OnMenuClicked += OnMenuClickedMethod;
-        view.AsyncDisplayListHeaderHandler += HeaderHandler;
         view.OnSearchPageClicked += OnSearchPageClickedMethod;
         view.OnMainDisplayClicked += OnMainDisplayClickedMethod;
         view.OnManageProcessClicked += OnManageProcessClickedMethod;
@@ -299,11 +293,8 @@ internal class AppPresenter
 
     private void HeaderHandler()
     {
-        _totalMemoryUsage = 0;
-        CalculateTotalMemoryUsage();
-
         _view.DrawHeader(_currentPage, _countOfPages);
-        _view.DrawStats(_totalMemoryUsage, _totalMemoryGb, _processes.Length);
+        _view.DrawStats(ProcessService.CalculateTotalMemoryUsage(_processes), _totalMemoryGb, _processes.Length);
     }
 
     private void DisableDisplayList() =>
@@ -313,56 +304,6 @@ internal class AppPresenter
     {
         _manualResetEvent.Set();
         InputService.BlockInputInThreadSleep(80);
-    }
-
-    private void CalculateTotalMemoryUsage()
-    {
-        for (int i = 0; i < _processes.Length; i++)
-            _totalMemoryUsage += (float)_processes[i].PrivateMemorySize64 / (1024 * 1024);
-    }
-
-    private void BuildProcessName(Process process)
-    {
-        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
-        string nameExtension = Path.GetExtension(moduleFullNamePath);
-        _processName = process.ProcessName;
-
-        if (process.ProcessName.Length >= 25)
-            _processName = process.ProcessName[..22] + "..." + nameExtension;
-        else
-            _processName += nameExtension;
-    }
-
-    private void CalculateProcessMemoryUsage(Process process) =>
-        _processMemoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
-
-    private void CheckProcessNamePointer(Process process, int index)
-    {
-        if (NativeProcessService.CheckProcessName(process))
-            DrawProcess(process, index, true);
-        else
-        {
-            PrepareProcess(process);
-            DrawProcess(process, index, false);
-        }
-    }
-
-    private void PrepareProcess(Process process)
-    {
-        BuildProcessName(process);
-        CalculateProcessMemoryUsage(process);
-    }
-
-    private void DrawProcess(Process process, int index, bool isEmpty)
-    {
-        if (isEmpty)
-        {
-            _view.DrawEmptyStroke();
-        }
-        else
-        {
-            _view.DrawPage(process, index, _processMemoryUsage, _processName);
-        }
     }
 
     private async Task UpdateProcessesDataAsync(CancellationToken token)
@@ -387,6 +328,9 @@ internal class AppPresenter
                     ProcessService.SortProcessesByMemory(ref _processes);
                     break;
             }
+
+            // TODO: Dispose old array to clean RAM 
+
             await Task.Delay(770, token);
         }
     }
@@ -399,14 +343,18 @@ internal class AppPresenter
 
             lock (_locker)
             {
+                _processesList.Clear();
+
                 _view.ResetColor();
                 _view.CursorToTop();
+
                 HeaderHandler();
 
-                for (int i = 0; i < _page.Length; i++)
-                    CheckProcessNamePointer(_page[i], i);
-            }
+                for (int i = 0; i < _page.Length; i++) // TODO: MARKER
+                    _processesList.Add(new ProcessStruct(_page[i], i, ProcessService.CalculateProcessMemoryUsage(_page[i]), ProcessService.BuildProcessName(_page[i])));
 
+                _view.DrawPage(_processesList);
+            }
             await Task.Delay(950, token);
         }
     }

@@ -1,9 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using ProcessManager.Enums.VirtualKeyTypes;
+using System.Runtime.InteropServices;
 
 namespace ProcessManager.Models.NativeConsoleMethods
 {
     internal class NativeConsoleMethod
     {
+        [DllImport("kernel32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
         [DllImport("kernel32.dll")]
         public static extern IntPtr GetStdHandle(int nStdHandle);
         [DllImport("kernel32.dll")]
@@ -19,6 +22,15 @@ namespace ProcessManager.Models.NativeConsoleMethods
 
             IntPtr consoleMode = GetStdHandle(-10);
             SetConsoleMode(consoleMode, mode);
+        }
+
+        public static VirtualKeyType GetHiddenUserInput()
+        {
+            short userInput = 0;
+            
+            
+
+            return userInput;
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using ProcessManager.Enums.ErrorTypes;
 using ProcessManager.Interfaces.Iviews;
+using ProcessManager.Structs;
 using ProcessManager.UiResources;
-using System.Diagnostics;
 
 namespace ProcessManager.Displays;
 
@@ -23,7 +23,7 @@ internal class Display : IView
     private const int PidTextSpaceLimit = 5;
 
     private int _leftPartLengthLogo = 0;
-    private ConsoleColor consoleColor = ConsoleColor.White; // TODO: Figure out how does readonly works 'cause i did something like that and i didn't understand
+    private ConsoleColor consoleColor = ConsoleColor.White;
 
     public void MainMenu() =>
         OnMenuClicked?.Invoke();
@@ -88,18 +88,25 @@ internal class Display : IView
         Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
     }
 
-    public void DrawEmptyStroke() =>
-        Console.Write($"{UiResource.EmptyStroke}\n");
-
-    public void DrawPage(Process process, int index, float memoryUsage, string processName)
+    public void DrawPage(List<ProcessStruct> processes)
     {
-        if (index % 2 == 0) consoleColor = ConsoleColor.DarkGray;
-        else consoleColor = ConsoleColor.Gray;
+        for (int i = 0; i < processes.Count; i++)
+        {
+            if (processes[i].process == null)
+            {
+                Console.WriteLine(UiResource.EmptyStroke);
+            }
+            else
+            {
+                if (processes[i].index % 2 == 0) consoleColor = ConsoleColor.DarkGray;
+                else consoleColor = ConsoleColor.Gray;
 
-        Console.Write($"| CID: {index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
-        Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-        Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = consoleColor);
-        Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+                Console.Write($"| CID: {processes[i].index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
+                Console.Write($"| Name: {processes[i].processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
+                Console.Write($"| PID: {processes[i].process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = consoleColor);
+                Console.Write($"| Memory: {processes[i].memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+            }
+        }
     }
 
     public void ManageOptionDraw()
@@ -175,8 +182,6 @@ internal class Display : IView
     public void CursorToTop() =>
         Console.SetCursorPosition(0, 0);
 
-    public void ResetColor()
-    {
+    public void ResetColor() =>
         Console.ResetColor();
-    }
 }

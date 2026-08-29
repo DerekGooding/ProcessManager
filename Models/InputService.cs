@@ -2,12 +2,6 @@
 
 internal class InputService
 {
-    public static ConsoleKeyInfo GetHiddenUserInput()
-    {
-        ConsoleKeyInfo userInput = Console.ReadKey(intercept: true);
-        return userInput;
-    }
-
     public static string GetUserMultiInput()
     {
         string userInput = Console.ReadLine() ?? String.Empty;

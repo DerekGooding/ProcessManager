@@ -1,5 +1,7 @@
 ﻿using ProcessManager.Enums.ErrorTypes;
+using ProcessManager.Structs;
 using System.Diagnostics;
+using System.Net;
 
 namespace ProcessManager.Interfaces.Iviews;
 
@@ -10,10 +12,9 @@ internal interface IView
     event Action OnMainDisplayClicked;
     event Action OnManageProcessClicked;
     event Action OnFilterProcessesClicked;
-    event Action AsyncDisplayListHeaderHandler;
     event Action<int> OnChangePriorityClicked;
 
-    void DrawPage(Process process, int index, float memoryUsage, string processName);
+    void DrawPage(List<ProcessStruct> processes);
     void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses);
     void DrawHeader(int currentPage, int countOfPages);
     void DisplayError(ErrorType errorType);
@@ -23,7 +24,6 @@ internal interface IView
     void FilterMemoryOptionsDraw();
     void EnterNumberOfPage();
     void ManageOptionDraw();
-    void DrawEmptyStroke();
     void FilterProcesses();
     void ManageProcess();
     void MainMenuDraw();

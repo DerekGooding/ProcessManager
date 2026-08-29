@@ -1,4 +1,5 @@
 ﻿using ProcessManager.Loggers.AppLoggeres;
+using ProcessManager.Models.NativeProcessServices;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -80,6 +81,61 @@ internal class ProcessService
         catch (Win32Exception)
         {
             AppLogger.Log("Win 32 exception");
+            return false;
+        }
+    }
+
+    public static float CalculateTotalMemoryUsage(Process[] processes)
+    {
+        float totalMemoryUsage = 0;
+
+        for (int i = 0; i < processes.Length; i++)
+            totalMemoryUsage += (float)processes[i].PrivateMemorySize64 / (1024 * 1024);
+
+        return totalMemoryUsage;
+    }
+
+    public static string BuildProcessName(Process process)
+    {
+        if(process == null)
+        {
+            return String.Empty;
+        }
+
+        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
+        string nameExtension = Path.GetExtension(moduleFullNamePath);
+        string processName;
+
+        if (process.ProcessName.Length >= 25)
+            processName = process.ProcessName[..22] + "..." + nameExtension;
+        else
+            processName = process.ProcessName + nameExtension;
+
+        return processName;
+    }
+
+    public static int CalculateProcessMemoryUsage(Process process)
+    {
+        if (process == null)
+        {
+            return -1;
+        }
+
+        int processMemoryUsage = 0;
+
+        processMemoryUsage = (int)(process.PrivateMemorySize64 / (1024 * 1024));
+
+        return processMemoryUsage;
+    }
+
+    public static bool CheckProcessNamePointer(Process process, int index)
+    {
+        if (NativeProcessService.CheckProcessName(process))
+        {
+            return true;
+        }
+        else
+        {
             return false;
         }
     }
