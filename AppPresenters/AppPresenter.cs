@@ -1,4 +1,7 @@
 ﻿//TODO: Console class or console color try to replace
+//TODO: Move async to here
+//TODO: Check algorithm of each item filter to array display at the same time
+//TODO: Check nameplate of all of them fields and methods
 
 using ProcessManager.Enums.ErrorTypes;
 using ProcessManager.Enums.SortTypes;
@@ -18,7 +21,7 @@ internal class AppPresenter
 
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
     private readonly ManualResetEvent _manualResetEvent = new(true);
-    private readonly ConsoleColor _consoleColor = ConsoleColor.White; // TODO: to do with console in presenter. We don't know what is it.
+    private readonly Lock _locker = new();
     private readonly IView _view;
 
     private CancellationTokenSource? _ctsDisplayList;
@@ -41,14 +44,12 @@ internal class AppPresenter
         _view = view;
 
         view.OnMenuClicked += OnMenuClickedMethod;
-        view.AsyncDisplayPageLoadDataHandler += GetListData;
         view.AsyncDisplayListHeaderHandler += HeaderHandler;
         view.OnSearchPageClicked += OnSearchPageClickedMethod;
         view.OnMainDisplayClicked += OnMainDisplayClickedMethod;
         view.OnManageProcessClicked += OnManageProcessClickedMethod;
         view.OnChangePriorityClicked += OnChangePriorityClickedMethod;
         view.OnFilterProcessesClicked += OnFilterProcessesClickedMethod;
-        view.AsyncDisplayProcessCheckDataHandler += CheckProcessNamePointer;
     }
 
     private void OnMenuClickedMethod()
@@ -73,7 +74,7 @@ internal class AppPresenter
                     _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
                     _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
                     _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
-                    _ = _view.DisplayProcessesAsync(_page, _manualResetEvent, _consoleColor, _ctsDisplayList.Token);
+                    _ = PrepareDisplayProcessesAsync(_manualResetEvent, _ctsDisplayList.Token);
 
                     _view.MainDisplay();
                     break;
@@ -305,9 +306,6 @@ internal class AppPresenter
         _view.DrawStats(_totalMemoryUsage, _totalMemoryGb, _processes.Length);
     }
 
-    private void GetListData(Process[] page) =>
-        Array.Copy(_page, page, _page.Length);
-
     private void DisableDisplayList() =>
         _manualResetEvent.Reset();
 
@@ -335,19 +333,35 @@ internal class AppPresenter
             _processName += nameExtension;
     }
 
-    private void CalcualteProcessMemoryUsage(Process process) =>
+    private void CalculateProcessMemoryUsage(Process process) =>
         _processMemoryUsage = process.PrivateMemorySize64 / (1024 * 1024);
 
-    private void CheckProcessNamePointer(Process process, ConsoleColor currentColor, int index)
+    private void CheckProcessNamePointer(Process process, int index)
     {
         if (NativeProcessService.CheckProcessName(process))
-            _view.DrawEmptyStroke();
+            DrawProcess(process, index, true);
         else
         {
-            BuildProcessName(process);
-            CalcualteProcessMemoryUsage(process);
+            PrepareProcess(process);
+            DrawProcess(process, index, false);
+        }
+    }
 
-            _view.DrawProcess(process, currentColor, index, _processMemoryUsage, _processName);
+    private void PrepareProcess(Process process)
+    {
+        BuildProcessName(process);
+        CalculateProcessMemoryUsage(process);
+    }
+
+    private void DrawProcess(Process process, int index, bool isEmpty)
+    {
+        if (isEmpty)
+        {
+            _view.DrawEmptyStroke();
+        }
+        else
+        {
+            _view.DrawPage(process, index, _processMemoryUsage, _processName);
         }
     }
 
@@ -374,6 +388,26 @@ internal class AppPresenter
                     break;
             }
             await Task.Delay(770, token);
+        }
+    }
+
+    public async Task PrepareDisplayProcessesAsync(ManualResetEvent manualResetEvent, CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            manualResetEvent.WaitOne();
+
+            lock (_locker)
+            {
+                _view.ResetColor();
+                _view.CursorToTop();
+                HeaderHandler();
+
+                for (int i = 0; i < _page.Length; i++)
+                    CheckProcessNamePointer(_page[i], i);
+            }
+
+            await Task.Delay(950, token);
         }
     }
 

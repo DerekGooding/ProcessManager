@@ -7,10 +7,7 @@ namespace ProcessManager.Displays;
 
 internal class Display : IView
 {
-    public event Action<Process, ConsoleColor, int>? AsyncDisplayProcessCheckDataHandler;
-    public event Action<Process[]>? AsyncDisplayPageLoadDataHandler;
     public event Action<int>? OnChangePriorityClicked;
-
     public event Action? AsyncDisplayListHeaderHandler;
     public event Action? OnFilterProcessesClicked;
     public event Action? OnManageProcessClicked;
@@ -25,9 +22,8 @@ internal class Display : IView
     private const int NameTextSpaceLimit = 31;
     private const int PidTextSpaceLimit = 5;
 
-    private readonly Lock _locker = new();
-
     private int _leftPartLengthLogo = 0;
+    private ConsoleColor consoleColor = ConsoleColor.White; // TODO: Figure out how does readonly works 'cause i did something like that and i didn't understand
 
     public void MainMenu() =>
         OnMenuClicked?.Invoke();
@@ -46,34 +42,6 @@ internal class Display : IView
 
     public void FilterProcesses() =>
         OnFilterProcessesClicked?.Invoke();
-
-    public async Task DisplayProcessesAsync(Process[] page, ManualResetEvent manualResetEvent, ConsoleColor currentColor, CancellationToken token)
-    {
-        //TODO: maybe delete this async method ( move in another place )
-        while (!token.IsCancellationRequested)
-        {
-            manualResetEvent.WaitOne(); //TODO: Manual to another place
-
-            lock (_locker)
-            {
-                Console.SetCursorPosition(0, 0);
-                Console.ForegroundColor = ConsoleColor.Gray;
-
-                AsyncDisplayPageLoadDataHandler?.Invoke(page);
-                AsyncDisplayListHeaderHandler?.Invoke();
-
-                for (int i = 0; i < page.Length; i++)
-                {
-                    if (i % 2 == 0) currentColor = ConsoleColor.DarkGray;
-                    else currentColor = ConsoleColor.Gray;
-
-                    AsyncDisplayProcessCheckDataHandler?.Invoke(page[i], currentColor, i); //TODO: 3 paragraph
-                }
-            }
-            await Task.Delay(950, token);
-        }
-
-    }
 
     public void DisplayError(ErrorType errorType)
     {
@@ -123,11 +91,14 @@ internal class Display : IView
     public void DrawEmptyStroke() =>
         Console.Write($"{UiResource.EmptyStroke}\n");
 
-    public void DrawProcess(Process process, ConsoleColor currentColor, int index, float memoryUsage, string processName)
+    public void DrawPage(Process process, int index, float memoryUsage, string processName)
     {
-        Console.Write($"| CID: {index} \t", Console.ForegroundColor = currentColor); // сделать для cid массив full process'ов 
+        if (index % 2 == 0) consoleColor = ConsoleColor.DarkGray;
+        else consoleColor = ConsoleColor.Gray;
+
+        Console.Write($"| CID: {index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
         Console.Write($"| Name: {processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-        Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = currentColor);
+        Console.Write($"| PID: {process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = consoleColor);
         Console.Write($"| Memory: {memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
     }
 
@@ -200,4 +171,12 @@ internal class Display : IView
 
     public void ClearText() =>
         Console.Clear();
+
+    public void CursorToTop() =>
+        Console.SetCursorPosition(0, 0);
+
+    public void ResetColor()
+    {
+        Console.ResetColor();
+    }
 }

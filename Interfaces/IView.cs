@@ -5,20 +5,15 @@ namespace ProcessManager.Interfaces.Iviews;
 
 internal interface IView
 {
-    event Action AsyncDisplayListHeaderHandler;
-    event Action<Process[]> AsyncDisplayPageLoadDataHandler;
-    event Action<Process, ConsoleColor, int> AsyncDisplayProcessCheckDataHandler;
-    event Action<int> OnChangePriorityClicked;
-
     event Action OnMenuClicked;
     event Action OnSearchPageClicked;
     event Action OnMainDisplayClicked;
     event Action OnManageProcessClicked;
     event Action OnFilterProcessesClicked;
+    event Action AsyncDisplayListHeaderHandler;
+    event Action<int> OnChangePriorityClicked;
 
-    async Task DisplayProcessesAsync(Process[] processes, ManualResetEvent manualResetEvent, ConsoleColor currentColor, CancellationToken token) { }
-
-    void DrawProcess(Process process, ConsoleColor currentColor, int index, float memoryUsage, string processName);
+    void DrawPage(Process process, int index, float memoryUsage, string processName);
     void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses);
     void DrawHeader(int currentPage, int countOfPages);
     void DisplayError(ErrorType errorType);
@@ -32,8 +27,10 @@ internal interface IView
     void FilterProcesses();
     void ManageProcess();
     void MainMenuDraw();
+    void CursorToTop();
     void MainDisplay();
     void SearchPage();
+    void ResetColor();
     void ClearText();
     void MainMenu();
     void EnterCid();
