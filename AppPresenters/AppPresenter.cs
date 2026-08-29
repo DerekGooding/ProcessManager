@@ -106,15 +106,15 @@ internal class AppPresenter
                     continue;
 
                 case VirtualKeyType.VK_OEM_3:
-                    OnManageProcessClickedMethod();
+                    _view.ManageProcess();
                     break;
 
                 case VirtualKeyType.VK_TAB:
-                    OnFilterProcessesClickedMethod();
+                    _view.FilterProcesses();
                     break;
 
                 case VirtualKeyType.VK_F1:
-                    OnSearchPageClickedMethod();
+                    _view.SearchPage();
                     break;
 
                 case VirtualKeyType.VK_BACK:
