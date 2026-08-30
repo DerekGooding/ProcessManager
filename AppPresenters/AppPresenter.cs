@@ -5,6 +5,7 @@ using ProcessManager.Enums.SortTypes;
 using ProcessManager.Interfaces.Iviews;
 using ProcessManager.Loggers.AppLoggeres;
 using ProcessManager.Models.InputServices;
+using ProcessManager.Models.NativeConsoleMethods;
 using ProcessManager.Models.PageCalculators;
 using ProcessManager.Models.ProcessServices;
 using ProcessManager.Structs;
@@ -36,6 +37,8 @@ internal class AppPresenter
     public AppPresenter(IView view)
     {
         _view = view;
+
+        view.OnWaitingUserInput += NativeConsoleMethod.GetHiddenUserInput;
 
         view.OnProcessesFilterOptionRequested += FilterProcessesCheckOption;
         view.OnManageOptionRequested += ManageProcessCheckOption;
@@ -145,7 +148,7 @@ internal class AppPresenter
             ErrorHelper(ErrorType.Wrong_Input);
             return;
         }
-        else 
+        else
             _view.ManageOptionDraw();
     }
 
@@ -251,34 +254,28 @@ internal class AppPresenter
 
     private async Task UpdateProcessesDataAsync()
     {
-        
-            AppLogger.Log("UPDATE ASYNC: start method");
 
-            //DisablePrepareData();
-            //DisableDisplayList();
+        AppLogger.Log("UPDATE ASYNC: start method");
 
-            foreach (var process in _processes) // TODO later 0
-                process?.Dispose();
+        foreach (var process in _processes) // TODO later 0
+            process?.Dispose();
 
-            //EnablePrepareData();
-            //EnableDisplayList();
+        _processes = ProcessService.GetAllProcesses();
 
-            _processes = ProcessService.GetAllProcesses();
+        switch (_sortType)
+        {
+            case SortType.Name:
+                ProcessService.SortProcessesByName(_processes);
+                break;
 
-            switch (_sortType)
-            {
-                case SortType.Name:
-                    ProcessService.SortProcessesByName(_processes);
-                    break;
+            case SortType.Pid:
+                ProcessService.SortProcessesByPid(_processes);
+                break;
 
-                case SortType.Pid:
-                    ProcessService.SortProcessesByPid(_processes);
-                    break;
+            case SortType.Memory:
+                ProcessService.SortProcessesByMemory(_processes);
+                break;
 
-                case SortType.Memory:
-                    ProcessService.SortProcessesByMemory(_processes);
-                    break;
-            
         }
     }
 
@@ -287,15 +284,6 @@ internal class AppPresenter
         while (!token.IsCancellationRequested)
         {
             manualResetEvent.WaitOne();
-
-            try
-            {
-                await UpdateProcessesDataAsync();
-            }
-            catch(Exception ex)
-            {
-                AppLogger.Log($"{ex.Message} | STACK TRACE: {ex.StackTrace}");
-            }
 
             _processesList.Clear();
 
@@ -328,18 +316,12 @@ internal class AppPresenter
     {
         while (!token.IsCancellationRequested)
         {
-            manualResetEvent.WaitOne();
+            await UpdateProcessesDataAsync();
 
             _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
             await Task.Delay(810, token);
         }
     }
-
-    //private void DisablePrepareData() => // TODO: later 1
-    //    _manualResetEventPrepareData.Reset();
-
-    //private void EnablePrepareData() =>
-    //    _manualResetEventPrepareData.Set(); // TODO: later 2
 
     private void DisableDisplayList() =>
         _manualResetEventPrepareDisplay.Reset();

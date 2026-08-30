@@ -2,6 +2,7 @@
 using ProcessManager.Enums.ProcessChangePriorityTypes;
 using ProcessManager.Enums.ProcessManageTypes;
 using ProcessManager.Enums.SortTypes;
+using ProcessManager.Enums.VirtualKeyTypes;
 using ProcessManager.Structs;
 using System.Diagnostics;
 
@@ -9,6 +10,8 @@ namespace ProcessManager.Interfaces.Iviews;
 
 internal interface IView
 {
+    event Func<VirtualKeyType> OnWaitingUserInput;
+
     event Action<SortType> OnProcessesFilterOptionRequested;
     event Action<ProcessManageType, int> OnManageOptionRequested;
     event Action<ProcessChangePriorityType, int> OnChangePriorityOptionRequested;
