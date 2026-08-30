@@ -38,8 +38,6 @@ internal class AppPresenter
     {
         _view = view;
 
-        view.OnWaitingUserInput += NativeConsoleMethod.GetHiddenUserInput;
-
         view.OnProcessesFilterOptionRequested += FilterProcessesCheckOption;
         view.OnManageOptionRequested += ManageProcessCheckOption;
         view.OnChangePriorityOptionRequested += ChangePriorityProcessCheckOption;

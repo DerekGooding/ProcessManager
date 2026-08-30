@@ -7,8 +7,10 @@ namespace ProcessManager.Models.ProcessServices;
 
 internal class ProcessService
 {
-    public static Process[] GetAllProcesses() =>
-        Process.GetProcesses();
+    public static Process[] GetAllProcesses()
+    {
+        return Process.GetProcesses();
+    }
 
     public static void SortProcessesByName(Process[] processes) =>
         Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));

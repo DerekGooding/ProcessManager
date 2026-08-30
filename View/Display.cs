@@ -13,8 +13,6 @@ namespace ProcessManager.Displays;
 
 internal class Display : IView
 {
-    public event Func<VirtualKeyType>? OnWaitingUserInput;
-
     public event Action<SortType>? OnProcessesFilterOptionRequested;
     public event Action<ProcessManageType, int>? OnManageOptionRequested;
     public event Action<ProcessChangePriorityType, int>? OnChangePriorityOptionRequested;
@@ -55,7 +53,7 @@ internal class Display : IView
         {
             MainMenuDraw();
 
-            switch (OnWaitingUserInput?.Invoke())
+            switch (NativeConsoleMethod.GetHiddenUserInput())
             {
                 case VirtualKeyType.VK_RETURN:
                     OnEnterRequested?.Invoke();
@@ -80,7 +78,7 @@ internal class Display : IView
         {
             OnMainDisplayReady?.Invoke();
 
-            switch (OnWaitingUserInput?.Invoke())
+            switch (NativeConsoleMethod.GetHiddenUserInput())
             {
                 case VirtualKeyType.VK_E:
                     OnNextPageRequested?.Invoke();
@@ -128,7 +126,7 @@ internal class Display : IView
 
         OnManageProcessCheckCidValue?.Invoke(userIndex);
 
-        switch (OnWaitingUserInput?.Invoke())
+        switch (NativeConsoleMethod.GetHiddenUserInput())
         {
             case VirtualKeyType.VK_1:
                 OnManageOptionRequested?.Invoke(ProcessManageType.KillProcess, userIndex);
@@ -173,7 +171,7 @@ internal class Display : IView
     {
         OnFilterProcessesReady?.Invoke();
 
-        switch (OnWaitingUserInput?.Invoke())
+        switch (NativeConsoleMethod.GetHiddenUserInput())
         {
             case VirtualKeyType.VK_1:
                 OnProcessesFilterOptionRequested?.Invoke(SortType.Name);
@@ -201,7 +199,7 @@ internal class Display : IView
     {
         OnChangePriorityReady?.Invoke();
 
-        switch (OnWaitingUserInput?.Invoke())
+        switch (OnWaitingUserInput?.Invoke)
         {
             case VirtualKeyType.VK_1:
                 OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.RealTime, userIndex);
