@@ -1,18 +1,37 @@
 ﻿using ProcessManager.Enums.ErrorTypes;
+using ProcessManager.Enums.ProcessChangePriorityTypes;
+using ProcessManager.Enums.ProcessManageTypes;
+using ProcessManager.Enums.SortTypes;
 using ProcessManager.Structs;
 using System.Diagnostics;
-using System.Net;
 
 namespace ProcessManager.Interfaces.Iviews;
 
 internal interface IView
 {
-    event Action OnMenuClicked;
-    event Action OnSearchPageClicked;
-    event Action OnMainDisplayClicked;
-    event Action OnManageProcessClicked;
-    event Action OnFilterProcessesClicked;
-    event Action<int> OnChangePriorityClicked;
+    event Action<SortType> OnProcessesFilterOptionRequested;
+    event Action<ProcessManageType, int> OnManageOptionRequested;
+    event Action<ProcessChangePriorityType, int> OnChangePriorityOptionRequested;
+
+    event Action<int> OnManageProcessCheckCidValue;
+    event Action<int> OnSearchPageCheckValue;
+
+    event Action OnDefaultMainMenuRequested;
+    event Action OnDefaultMainDisplayRequested;
+    event Action<ErrorType> OnDefaultGeneralRequested;
+
+    event Action OnChangePriorityReady;
+    event Action OnSearchPageReady;
+    event Action OnFilterProcessesReady;
+    event Action OnManageProcessReady;
+    event Action OnMainDisplayReady;
+
+    event Action OnNextPageRequested;
+    event Action OnPreviousPageRequested;
+
+    event Action OnEnterRequested;
+    event Action OnExitRequested;
+    event Action OnReturnRequested;
 
     void DrawPage(List<ProcessStruct> processes);
     void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses);
@@ -24,12 +43,9 @@ internal interface IView
     void FilterMemoryOptionsDraw();
     void EnterNumberOfPage();
     void ManageOptionDraw();
-    void FilterProcesses();
-    void ManageProcess();
     void MainMenuDraw();
     void CursorToTop();
     void MainDisplay();
-    void SearchPage();
     void ResetColor();
     void ClearText();
     void MainMenu();

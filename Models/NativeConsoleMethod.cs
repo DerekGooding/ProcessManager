@@ -39,6 +39,11 @@ internal class NativeConsoleMethod
             {
                 if ((GetAsyncKeyState((short)virtualKeyTypes[i]) & 0x8000 ) != 0)
                 {
+                    while((GetAsyncKeyState((short)virtualKeyTypes[i]) & 0x0001) != 0)
+                    {
+                        Thread.Sleep(2);
+                    }
+
                     return virtualKeyTypes[i];
                 }
 

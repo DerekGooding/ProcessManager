@@ -1,5 +1,11 @@
 ﻿using ProcessManager.Enums.ErrorTypes;
+using ProcessManager.Enums.ProcessChangePriorityTypes;
+using ProcessManager.Enums.ProcessManageTypes;
+using ProcessManager.Enums.SortTypes;
+using ProcessManager.Enums.VirtualKeyTypes;
 using ProcessManager.Interfaces.Iviews;
+using ProcessManager.Models.InputServices;
+using ProcessManager.Models.NativeConsoleMethods;
 using ProcessManager.Structs;
 using ProcessManager.UiResources;
 
@@ -7,13 +13,29 @@ namespace ProcessManager.Displays;
 
 internal class Display : IView
 {
-    public event Action<int>? OnChangePriorityClicked;
-    public event Action? AsyncDisplayListHeaderHandler;
-    public event Action? OnFilterProcessesClicked;
-    public event Action? OnManageProcessClicked;
-    public event Action? OnMainDisplayClicked;
-    public event Action? OnSearchPageClicked;
-    public event Action? OnMenuClicked;
+    public event Action<SortType>? OnProcessesFilterOptionRequested;
+    public event Action<ProcessManageType, int>? OnManageOptionRequested;
+    public event Action<ProcessChangePriorityType, int>? OnChangePriorityOptionRequested;
+
+    public event Action<int>? OnSearchPageCheckValue;
+    public event Action<int>? OnManageProcessCheckCidValue;
+
+    public event Action? OnDefaultMainMenuRequested;
+    public event Action? OnDefaultMainDisplayRequested;
+    public event Action<ErrorType>? OnDefaultGeneralRequested;
+
+    public event Action? OnChangePriorityReady;
+    public event Action? OnSearchPageReady;
+    public event Action? OnFilterProcessesReady;
+    public event Action? OnManageProcessReady;
+    public event Action? OnMainDisplayReady;
+
+    public event Action? OnEnterRequested;
+    public event Action? OnExitRequested;
+    public event Action? OnReturnRequested;
+
+    public event Action? OnPreviousPageRequested;
+    public event Action? OnNextPageRequested;
 
     private const int TotalMemoryUsageTextSpaceLimit = 4;
     private const int MemoryTextSpaceLimit = 5;
@@ -25,23 +47,193 @@ internal class Display : IView
     private int _leftPartLengthLogo = 0;
     private ConsoleColor consoleColor = ConsoleColor.White;
 
-    public void MainMenu() =>
-        OnMenuClicked?.Invoke();
+    public void MainMenu()
+    {
+        while (true)
+        {
+            MainMenuDraw();
 
-    public void MainDisplay() =>
-        OnMainDisplayClicked?.Invoke();
+            switch (NativeConsoleMethod.GetHiddenUserInput())
+            {
+                case VirtualKeyType.VK_RETURN:
+                    OnEnterRequested?.Invoke();
+                    MainDisplay();
+                    break;
 
-    public void ManageProcess() =>
-        OnManageProcessClicked?.Invoke();
+                case VirtualKeyType.VK_BACK:
+                case VirtualKeyType.VK_ESCAPE:
+                    OnExitRequested?.Invoke();
+                    break;
 
-    public void ChangePriority(int userIndex) =>
-        OnChangePriorityClicked?.Invoke(userIndex);
+                default:
+                    OnDefaultMainMenuRequested?.Invoke();
+                    continue;
+            }
+        }
+    }
 
-    public void SearchPage() =>
-        OnSearchPageClicked?.Invoke();
+    public void MainDisplay()
+    {
+        while (true)
+        {
+            OnMainDisplayReady?.Invoke();
 
-    public void FilterProcesses() =>
-        OnFilterProcessesClicked?.Invoke();
+            switch (NativeConsoleMethod.GetHiddenUserInput())
+            {
+                case VirtualKeyType.VK_E:
+                    OnNextPageRequested?.Invoke();
+                    continue;
+
+                case VirtualKeyType.VK_Q:
+                    OnPreviousPageRequested?.Invoke();
+                    continue;
+
+                case VirtualKeyType.VK_OEM_3:
+                    ManageProcess();
+                    continue;
+
+                case VirtualKeyType.VK_TAB:
+                    FilterProcesses();
+                    continue;
+
+                case VirtualKeyType.VK_F1:
+                    SearchPage();
+                    continue;
+
+                case VirtualKeyType.VK_BACK:
+                case VirtualKeyType.VK_ESCAPE:
+                    OnReturnRequested?.Invoke();
+                    return;
+
+                default:
+                    OnDefaultMainDisplayRequested?.Invoke();
+                    continue;
+            }
+        }
+    }
+
+    public void ManageProcess()
+    {
+        OnManageProcessReady?.Invoke();
+
+        EnterCid();
+
+        if (!int.TryParse(Console.ReadLine(), out int userIndex))
+        {
+            OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
+            return;
+        }
+
+        OnManageProcessCheckCidValue?.Invoke(userIndex);
+
+        switch (NativeConsoleMethod.GetHiddenUserInput())
+        {
+            case VirtualKeyType.VK_1:
+                OnManageOptionRequested?.Invoke(ProcessManageType.KillProcess, userIndex);
+                return;
+
+            case VirtualKeyType.VK_2:
+                OnManageOptionRequested?.Invoke(ProcessManageType.CloseProcess, userIndex);
+                return;
+
+            case VirtualKeyType.VK_3:
+                OnManageOptionRequested?.Invoke(ProcessManageType.OpenFileDirectory, userIndex);
+                return;
+
+            case VirtualKeyType.VK_4:
+                ChangePriority(userIndex);
+                return;
+
+            case VirtualKeyType.VK_BACK:
+            case VirtualKeyType.VK_ESCAPE:
+                return;
+
+            default:
+                OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
+                return;
+        }
+    }
+
+    public void SearchPage()
+    {
+        OnSearchPageReady?.Invoke();
+
+        if (!int.TryParse(InputService.GetUserMultiInput(), out int userIndex))
+        {
+            OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
+            return;
+        }
+
+        OnSearchPageCheckValue?.Invoke(userIndex);
+    }
+
+    public void FilterProcesses()
+    {
+        OnFilterProcessesReady?.Invoke();
+
+        switch (NativeConsoleMethod.GetHiddenUserInput())
+        {
+            case VirtualKeyType.VK_1:
+                OnProcessesFilterOptionRequested?.Invoke(SortType.Name);
+                return;
+
+            case VirtualKeyType.VK_2:
+                OnProcessesFilterOptionRequested?.Invoke(SortType.Pid);
+                return;
+
+            case VirtualKeyType.VK_3:
+                OnProcessesFilterOptionRequested?.Invoke(SortType.Memory);
+                return;
+
+            case VirtualKeyType.VK_BACK:
+            case VirtualKeyType.VK_ESCAPE:
+                return;
+
+            default:
+                OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
+                return;
+        }
+    }
+
+    public void ChangePriority(int userIndex)
+    {
+        OnChangePriorityReady?.Invoke();
+
+        switch (NativeConsoleMethod.GetHiddenUserInput())
+        {
+            case VirtualKeyType.VK_1:
+                OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.RealTime, userIndex);
+                return;
+
+            case VirtualKeyType.VK_2:
+                OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.High, userIndex);
+                return;
+
+            case VirtualKeyType.VK_3:
+                OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.AboveNormal, userIndex);
+                return;
+
+            case VirtualKeyType.VK_4:
+                OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.Normal, userIndex);
+                return;
+
+            case VirtualKeyType.VK_5:
+                OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.BelowNormal, userIndex);
+                return;
+
+            case VirtualKeyType.VK_6:
+                OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.Idle, userIndex);
+                return;
+
+            case VirtualKeyType.VK_BACK:
+            case VirtualKeyType.VK_ESCAPE:
+                return;
+
+            default:
+                OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
+                break;
+        }
+    }
 
     public void DisplayError(ErrorType errorType)
     {

@@ -1,12 +1,10 @@
-﻿//TODO: Convert console read line read key to the DLL import VK_SPACE = 0x20 or sohmething like that; ( medium )
-
-using ProcessManager.Enums.ErrorTypes;
+﻿using ProcessManager.Enums.ErrorTypes;
+using ProcessManager.Enums.ProcessChangePriorityTypes;
+using ProcessManager.Enums.ProcessManageTypes;
 using ProcessManager.Enums.SortTypes;
-using ProcessManager.Enums.VirtualKeyTypes;
 using ProcessManager.Interfaces.Iviews;
 using ProcessManager.Loggers.AppLoggeres;
 using ProcessManager.Models.InputServices;
-using ProcessManager.Models.NativeConsoleMethods;
 using ProcessManager.Models.PageCalculators;
 using ProcessManager.Models.ProcessServices;
 using ProcessManager.Structs;
@@ -18,224 +16,197 @@ internal class AppPresenter
 {
     private const int CountProcessesInPage = 20;
 
-    private readonly ManualResetEvent _manualResetEvent = new(true);
-    private readonly Lock _locker = new();
-    private readonly IView _view;
+    private readonly ManualResetEvent _manualResetEventPrepareDisplay = new(true);
+    private readonly ManualResetEvent _manualResetEventPrepareData = new(true);
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
+    private readonly List<ProcessStruct> _processesList = new();
+    private readonly IView _view;
 
     private CancellationTokenSource? _ctsDisplayList;
-    private CancellationTokenSource? _ctsUpdateDataList;
     private CancellationTokenSource? _ctsUpdateCountOfPage;
     private CancellationTokenSource? _ctsUpdateDataPage;
     private Process[]? _page;
-    private List<ProcessStruct> _processesList = new();
 
     private SortType _sortType = SortType.None;
     private int _countOfPages;
     private int _currentPage = 0;
 
-    private Process[] _processes = Process.GetProcesses();
+    private Process[] _processes = ProcessService.GetAllProcesses();
 
     public AppPresenter(IView view)
     {
         _view = view;
 
-        view.OnMenuClicked += OnMenuClickedMethod;
-        view.OnSearchPageClicked += OnSearchPageClickedMethod;
-        view.OnMainDisplayClicked += OnMainDisplayClickedMethod;
-        view.OnManageProcessClicked += OnManageProcessClickedMethod;
-        view.OnChangePriorityClicked += OnChangePriorityClickedMethod;
-        view.OnFilterProcessesClicked += OnFilterProcessesClickedMethod;
+        view.OnProcessesFilterOptionRequested += FilterProcessesCheckOption;
+        view.OnManageOptionRequested += ManageProcessCheckOption;
+        view.OnChangePriorityOptionRequested += ChangePriorityProcessCheckOption;
+
+        view.OnManageProcessCheckCidValue += OnManageProcessCheckCidValueMethod;
+        view.OnSearchPageCheckValue += OnSearchPageCheckValue;
+
+        view.OnDefaultGeneralRequested += ErrorHelper;
+        view.OnDefaultMainMenuRequested += OnDefaultMainMenuClickedMethod;
+        view.OnDefaultMainDisplayRequested += OnDefaultMainDisplayClickedMethod;
+
+        view.OnMainDisplayReady += OnMainDisplayReadyMethod;
+        view.OnManageProcessReady += OnManageProcessReadyMethod;
+        view.OnChangePriorityReady += OnChangePriorityReady;
+        view.OnFilterProcessesReady += OnFilterProcessesReady;
+        view.OnSearchPageReady += OnSearchPageReady;
+
+        view.OnNextPageRequested += OnNextPageRequestedMethod;
+        view.OnPreviousPageRequested += OnPreviousPageRequestedMethod;
+
+        view.OnEnterRequested += OnEnterClickedMethod;
+        view.OnExitRequested += OnExitClickedMethod;
+        view.OnReturnRequested += OnReturnRequested;
     }
-
-    private void OnMenuClickedMethod()
+    private void ChangePriorityProcessCheckOption(ProcessChangePriorityType processChangePriorityType, int userIndex)
     {
-        _ctsUpdateCountOfPage?.Dispose();
-        _ctsUpdateDataPage?.Dispose();
-        _ctsUpdateDataList?.Dispose();
-        _ctsDisplayList?.Dispose();
-
-        while (true)
+        switch (processChangePriorityType)
         {
-            _view.MainMenuDraw();
+            case ProcessChangePriorityType.RealTime:
+                ProcessService.ChangePriorityProcess(_page, userIndex, ProcessPriorityClass.RealTime);
+                return;
 
-            switch (NativeConsoleMethod.GetHiddenUserInput())
-            {
-                case VirtualKeyType.VK_RETURN:
-                    _ctsDisplayList = new();
-                    _ctsUpdateDataList = new();
-                    _ctsUpdateCountOfPage = new();
-                    _ctsUpdateDataPage = new();
+            case ProcessChangePriorityType.High:
+                ProcessService.ChangePriorityProcess(_page, userIndex, ProcessPriorityClass.High);
+                return;
 
-                    _ = UpdatePageAsync(_ctsUpdateDataPage.Token);
-                    _ = UpdateCountOfPagesAsync(_ctsUpdateCountOfPage.Token);
-                    _ = UpdateProcessesDataAsync(_ctsUpdateDataList.Token);
-                    _ = PrepareDisplayProcessesAsync(_manualResetEvent, _ctsDisplayList.Token);
+            case ProcessChangePriorityType.AboveNormal:
+                ProcessService.ChangePriorityProcess(_page, userIndex, ProcessPriorityClass.AboveNormal);
+                return;
 
-                    _view.MainDisplay();
-                    break;
+            case ProcessChangePriorityType.Normal:
+                ProcessService.ChangePriorityProcess(_page, userIndex, ProcessPriorityClass.Normal);
+                return;
 
-                case VirtualKeyType.VK_BACK:
-                case VirtualKeyType.VK_ESCAPE:
-                    Environment.Exit(0);
-                    break;
+            case ProcessChangePriorityType.BelowNormal:
+                ProcessService.ChangePriorityProcess(_page, userIndex, ProcessPriorityClass.BelowNormal);
+                return;
 
-                default:
-                    _view.DisplayError(ErrorType.Wrong_Input);
-                    InputService.BlockInputInThreadSleep(1500);
-                    continue;
-            }
-        }
-    }
-
-    private void OnMainDisplayClickedMethod()
-    {
-        while (true)
-        {
-            _view.ClearText();
-            EnableDisplayList();
-
-            switch (NativeConsoleMethod.GetHiddenUserInput())
-            {
-                case VirtualKeyType.VK_E:
-                    if (_currentPage < _countOfPages) _currentPage++;
-                    continue;
-
-                case VirtualKeyType.VK_Q:
-                    if (_currentPage > 0) _currentPage--;
-                    continue;
-
-                case VirtualKeyType.VK_OEM_3:
-                    _view.ManageProcess();
-                    break;
-
-                case VirtualKeyType.VK_TAB:
-                    _view.FilterProcesses();
-                    break;
-
-                case VirtualKeyType.VK_F1:
-                    _view.SearchPage();
-                    break;
-
-                case VirtualKeyType.VK_BACK:
-                case VirtualKeyType.VK_ESCAPE:
-                    _ctsUpdateCountOfPage?.Cancel();
-                    _ctsUpdateDataPage?.Cancel();
-                    _ctsUpdateDataList?.Cancel();
-                    _ctsDisplayList?.Cancel();
-                    return;
-
-                default:
-                    DisableDisplayList();
-                    _view.DisplayError(ErrorType.Wrong_Input);
-                    continue;
-            }
+            case ProcessChangePriorityType.Idle:
+                ProcessService.ChangePriorityProcess(_page, userIndex, ProcessPriorityClass.Idle);
+                return;
         }
     }
 
-    private void OnManageProcessClickedMethod()
+    private void ManageProcessCheckOption(ProcessManageType processManageType, int userIndex)
     {
-        DisableDisplayList();
-
-        _view.EnterCid();
-
-        if (!int.TryParse(InputService.GetUserMultiInput(), out int userIndex))
+        switch (processManageType)
         {
-            ErrorHelper(ErrorType.Wrong_Input);
-            return;
-        }
-
-        if (userIndex < 0 || userIndex > _processes.Length - 1)
-        {
-            ErrorHelper(ErrorType.Wrong_Input);
-            return;
-        }
-
-        _view.ManageOptionDraw();
-
-        switch (NativeConsoleMethod.GetHiddenUserInput())
-        {
-            case VirtualKeyType.VK_1:
-                if (!ProcessService.KillProcess(_processes, userIndex))
+            case ProcessManageType.KillProcess:
+                if (!ProcessService.KillProcess(_page, userIndex))
                     ErrorHelper(ErrorType.Run_As_Administator);
                 return;
 
-            case VirtualKeyType.VK_2:
-                if (!ProcessService.CloseMainWindowProcess(_processes, userIndex))
+            case ProcessManageType.CloseProcess:
+                if (!ProcessService.CloseMainWindowProcess(_page, userIndex))
                     ErrorHelper(ErrorType.Run_As_Administator);
                 return;
 
-            case VirtualKeyType.VK_3:
-                if (!ProcessService.OpenFileDirectoryProcess(_processes, userIndex))
+            case ProcessManageType.OpenFileDirectory:
+                if (!ProcessService.OpenFileDirectoryProcess(_page, userIndex))
                     ErrorHelper(ErrorType.Run_As_Administator);
-                return;
-
-            case VirtualKeyType.VK_4:
-                OnChangePriorityClickedMethod(userIndex);
-                return;
-
-            case VirtualKeyType.VK_BACK:
-            case VirtualKeyType.VK_ESCAPE:
-                return;
-
-            default:
-                ErrorHelper(ErrorType.Wrong_Input);
                 return;
         }
     }
 
-    private void OnChangePriorityClickedMethod(int userIndex)
+    private void FilterProcessesCheckOption(SortType sortType)
+    {
+        switch (sortType)
+        {
+            case SortType.Name:
+                _sortType = SortType.Name;
+                ProcessService.SortProcessesByName(_processes);
+                return;
+
+            case SortType.Pid:
+                _sortType = SortType.Pid;
+                ProcessService.SortProcessesByPid(_processes);
+                return;
+
+            case SortType.Memory:
+                _sortType = SortType.Memory;
+                ProcessService.SortProcessesByMemory(_processes);
+                return;
+        }
+    }
+
+    private void OnChangePriorityReady()
     {
         _view.ChangePriorityOptionDraw();
-
-        switch (NativeConsoleMethod.GetHiddenUserInput())
-        {
-            case VirtualKeyType.VK_1:
-                ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.RealTime);
-                return;
-
-            case VirtualKeyType.VK_2:
-                ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.High);
-                return;
-
-            case VirtualKeyType.VK_3:
-                ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.AboveNormal);
-                return;
-
-            case VirtualKeyType.VK_4:
-                ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Normal);
-                return;
-
-            case VirtualKeyType.VK_5:
-                ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.BelowNormal);
-                return;
-
-            case VirtualKeyType.VK_6:
-                ProcessService.ChangePriorityProcess(_processes, userIndex, ProcessPriorityClass.Idle);
-                return;
-
-            case VirtualKeyType.VK_BACK:
-            case VirtualKeyType.VK_ESCAPE:
-                return;
-
-            default:
-                ErrorHelper(ErrorType.Wrong_Input);
-                break;
-        }
     }
 
-    private void OnSearchPageClickedMethod()
+    private void OnManageProcessCheckCidValueMethod(int userIndex)
     {
-        DisableDisplayList();
-
-        _view.EnterNumberOfPage();
-
-        if (!int.TryParse(InputService.GetUserMultiInput(), out int userIndex))
+        if (userIndex < 0 || userIndex > _page.Length - 1)
         {
             ErrorHelper(ErrorType.Wrong_Input);
             return;
         }
+        else 
+            _view.ManageOptionDraw();
+    }
 
+    private void OnManageProcessReadyMethod()
+    {
+        DisableDisplayList();
+    }
+
+    private void OnNextPageRequestedMethod()
+    {
+        if (_currentPage < _countOfPages) _currentPage++;
+    }
+    private void OnPreviousPageRequestedMethod()
+    {
+        if (_currentPage > 0) _currentPage--;
+    }
+
+    private void OnMainDisplayReadyMethod()
+    {
+        _view.ClearText();
+        EnableDisplayList();
+    }
+
+    private void OnReturnRequested()
+    {
+        _ctsUpdateCountOfPage?.Cancel();
+        _ctsUpdateDataPage?.Cancel();
+        _ctsDisplayList?.Cancel();
+
+        _ctsUpdateCountOfPage?.Dispose();
+        _ctsUpdateDataPage?.Dispose();
+        _ctsDisplayList?.Dispose();
+    }
+
+    private void OnDefaultMainMenuClickedMethod()
+    {
+        _view.DisplayError(ErrorType.Wrong_Input);
+        InputService.BlockInputInThreadSleep(1500);
+    }
+    private void OnDefaultMainDisplayClickedMethod()
+    {
+        DisableDisplayList();
+        _view.DisplayError(ErrorType.Wrong_Input);
+    }
+
+    private void OnExitClickedMethod() =>
+        Environment.Exit(0);
+
+    private void OnEnterClickedMethod()
+    {
+        _ctsDisplayList = new();
+        _ctsUpdateCountOfPage = new();
+        _ctsUpdateDataPage = new();
+
+        _ = UpdatePageAsync(_manualResetEventPrepareData, _ctsUpdateDataPage.Token);
+        _ = UpdateCountOfPagesAsync(_manualResetEventPrepareData, _ctsUpdateCountOfPage.Token);
+        _ = PrepareDisplayProcessesAsync(_manualResetEventPrepareDisplay, _ctsDisplayList.Token);
+    }
+
+    private void OnSearchPageCheckValue(int userIndex)
+    {
         if (userIndex < 0 || userIndex > _countOfPages)
         {
             ErrorHelper(ErrorType.Wrong_Input);
@@ -245,38 +216,18 @@ internal class AppPresenter
         _currentPage = userIndex;
     }
 
-    private void OnFilterProcessesClickedMethod()
+    private void OnSearchPageReady()
+    {
+        DisableDisplayList();
+
+        _view.EnterNumberOfPage();
+    }
+
+    private void OnFilterProcessesReady()
     {
         DisableDisplayList();
 
         _view.FilterMemoryOptionsDraw();
-
-        switch (NativeConsoleMethod.GetHiddenUserInput())
-        {
-            case VirtualKeyType.VK_1:
-                _sortType = SortType.Name;
-                ProcessService.SortProcessesByName(ref _processes);
-                return;
-
-            case VirtualKeyType.VK_2:
-                _sortType = SortType.Pid;
-                ProcessService.SortProcessesByPid(ref _processes);
-                return;
-
-            case VirtualKeyType.VK_3:
-                _sortType = SortType.Memory;
-                ProcessService.SortProcessesByMemory(ref _processes);
-                return;
-
-            case VirtualKeyType.VK_BACK:
-            case VirtualKeyType.VK_ESCAPE:
-                return;
-
-            default:
-                ErrorHelper(ErrorType.Wrong_Input);
-                return;
-
-        }
     }
 
     private void ErrorHelper(ErrorType errorType)
@@ -298,41 +249,36 @@ internal class AppPresenter
         _view.DrawStats(ProcessService.CalculateTotalMemoryUsage(_processes), _totalMemoryGb, _processes.Length);
     }
 
-    private void DisableDisplayList() =>
-        _manualResetEvent.Reset();
-
-    private void EnableDisplayList()
+    private async Task UpdateProcessesDataAsync()
     {
-        _manualResetEvent.Set();
-        InputService.BlockInputInThreadSleep(80);
-    }
-
-    private async Task UpdateProcessesDataAsync(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
-        {
+        
             AppLogger.Log("UPDATE ASYNC: start method");
 
-            _processes = Process.GetProcesses();
+            //DisablePrepareData();
+            //DisableDisplayList();
+
+            foreach (var process in _processes) // TODO later 0
+                process?.Dispose();
+
+            //EnablePrepareData();
+            //EnableDisplayList();
+
+            _processes = ProcessService.GetAllProcesses();
 
             switch (_sortType)
             {
                 case SortType.Name:
-                    ProcessService.SortProcessesByName(ref _processes);
+                    ProcessService.SortProcessesByName(_processes);
                     break;
 
                 case SortType.Pid:
-                    ProcessService.SortProcessesByPid(ref _processes);
+                    ProcessService.SortProcessesByPid(_processes);
                     break;
 
                 case SortType.Memory:
-                    ProcessService.SortProcessesByMemory(ref _processes);
+                    ProcessService.SortProcessesByMemory(_processes);
                     break;
-            }
-
-            // TODO: Dispose old array to clean RAM 
-
-            await Task.Delay(770, token);
+            
         }
     }
 
@@ -342,39 +288,65 @@ internal class AppPresenter
         {
             manualResetEvent.WaitOne();
 
-            lock (_locker)
+            try
             {
-                _processesList.Clear();
-
-                _view.ResetColor();
-                _view.CursorToTop();
-
-                HeaderHandler();
-
-                for (int i = 0; i < _page.Length; i++) // TODO: MARKER
-                    _processesList.Add(new ProcessStruct(_page[i], i, ProcessService.CalculateProcessMemoryUsage(_page[i]), ProcessService.BuildProcessName(_page[i])));
-
-                _view.DrawPage(_processesList);
+                await UpdateProcessesDataAsync();
             }
+            catch(Exception ex)
+            {
+                AppLogger.Log($"{ex.Message} | STACK TRACE: {ex.StackTrace}");
+            }
+
+            _processesList.Clear();
+
+            _view.ResetColor();
+            _view.CursorToTop();
+
+            HeaderHandler();
+
+            for (int i = 0; i < _page.Length; i++)
+                _processesList.Add(new ProcessStruct(_page[i], i, ProcessService.CalculateProcessMemoryUsage(_page[i]), ProcessService.BuildProcessName(_page[i])));
+
+            _view.DrawPage(_processesList);
+
             await Task.Delay(950, token);
         }
     }
 
-    private async Task UpdateCountOfPagesAsync(CancellationToken token)
+    private async Task UpdateCountOfPagesAsync(ManualResetEvent manualResetEvent, CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
+            manualResetEvent.WaitOne();
+
             _countOfPages = PageCalculator.CalculateCountOfPages(_processes, CountProcessesInPage);
             await Task.Delay(790, token);
         }
     }
 
-    private async Task UpdatePageAsync(CancellationToken token)
+    private async Task UpdatePageAsync(ManualResetEvent manualResetEvent, CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
+            manualResetEvent.WaitOne();
+
             _page = PageCalculator.CalculatePage(_processes, CountProcessesInPage, _currentPage);
             await Task.Delay(810, token);
         }
+    }
+
+    //private void DisablePrepareData() => // TODO: later 1
+    //    _manualResetEventPrepareData.Reset();
+
+    //private void EnablePrepareData() =>
+    //    _manualResetEventPrepareData.Set(); // TODO: later 2
+
+    private void DisableDisplayList() =>
+        _manualResetEventPrepareDisplay.Reset();
+
+    private void EnableDisplayList()
+    {
+        _manualResetEventPrepareDisplay.Set();
+        InputService.BlockInputInThreadSleep(80);
     }
 }

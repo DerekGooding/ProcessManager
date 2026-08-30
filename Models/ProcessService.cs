@@ -7,13 +7,16 @@ namespace ProcessManager.Models.ProcessServices;
 
 internal class ProcessService
 {
-    public static void SortProcessesByName(ref Process[] processes) =>
+    public static Process[] GetAllProcesses() =>
+        Process.GetProcesses();
+
+    public static void SortProcessesByName(Process[] processes) =>
         Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
 
-    public static void SortProcessesByPid(ref Process[] processes) =>
+    public static void SortProcessesByPid(Process[] processes) =>
         Array.Sort(processes, (x, y) => x.Id.CompareTo(y.Id));
 
-    public static void SortProcessesByMemory(ref Process[] processes) =>
+    public static void SortProcessesByMemory(Process[] processes) =>
         Array.Sort(processes, (x, y) => y.PrivateMemorySize64.CompareTo(x.PrivateMemorySize64));
 
 
@@ -97,7 +100,7 @@ internal class ProcessService
 
     public static string BuildProcessName(Process process)
     {
-        if(process == null)
+        if (process == null)
         {
             return String.Empty;
         }
