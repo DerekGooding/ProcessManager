@@ -117,7 +117,7 @@ internal class ProcessService
             return -1;
         }
 
-        int processMemoryUsage = 0;
+        //int processMemoryUsage = 0;
 
         return (int)(process.PrivateMemorySize64 / (1024 * 1024));
     }

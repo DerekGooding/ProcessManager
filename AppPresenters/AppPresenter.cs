@@ -58,6 +58,9 @@ internal class AppPresenter
     }
     private void ChangePriorityProcessCheckOption(ProcessChangePriorityType processChangePriorityType, int userIndex)
     {
+        if (_page is null)
+            throw new InvalidOperationException("Process page is null.");
+
         switch (processChangePriorityType)
         {
             case ProcessChangePriorityType.RealTime:
@@ -88,6 +91,9 @@ internal class AppPresenter
 
     private void ManageProcessCheckOption(ProcessManageType processManageType, int userIndex)
     {
+        if (_page is null)
+            throw new InvalidOperationException("Process page is null.");
+
         switch (processManageType)
         {
             case ProcessManageType.KillProcess:

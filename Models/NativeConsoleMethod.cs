@@ -14,7 +14,7 @@ internal class NativeConsoleMethod
 
     public static void BlockMouseSelection()
     {
-        const int ConsoleModeAccess = 0x0040;
+        //const int ConsoleModeAccess = 0x0040;
         const int ConsoleBlockMouseSelection = 0x0080;
         const int ConsoleAccessInputs = 0x0001 | 0x0002 | 0x0003 | 0x0004;
 
@@ -26,7 +26,7 @@ internal class NativeConsoleMethod
 
     public static VirtualKeyType GetHiddenUserInput()
     {
-        VirtualKeyType virtualKeyType = VirtualKeyType.VK_NONE;
+        //VirtualKeyType virtualKeyType = VirtualKeyType.VK_NONE;
 
         VirtualKeyType[] virtualKeyTypes = [VirtualKeyType.VK_1, VirtualKeyType.VK_2, VirtualKeyType.VK_3, VirtualKeyType.VK_4,
             VirtualKeyType.VK_5, VirtualKeyType.VK_6, VirtualKeyType.VK_ESCAPE, VirtualKeyType.VK_BACK, VirtualKeyType.VK_Q, VirtualKeyType.VK_E,
