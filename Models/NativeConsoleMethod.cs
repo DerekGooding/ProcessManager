@@ -3,14 +3,15 @@ using System.Runtime.InteropServices;
 
 namespace ProcessManager.Models;
 
-internal class NativeConsoleMethod
+internal partial class NativeConsoleMethod
 {
-    [DllImport("user32.dll")]
-    private static extern short GetAsyncKeyState(int vKey);
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GetStdHandle(int nStdHandle);
-    [DllImport("kernel32.dll")]
-    public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+    [LibraryImport("user32.dll")]
+    private static partial short GetAsyncKeyState(int vKey);
+    [LibraryImport("kernel32.dll")]
+    public static partial IntPtr GetStdHandle(int nStdHandle);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 
     public static void BlockMouseSelection()
     {
