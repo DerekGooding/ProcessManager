@@ -1,33 +1,32 @@
 ﻿using System.Diagnostics;
 
-namespace ProcessManager.Models
+namespace ProcessManager.Models;
+
+internal class PageCalculator
 {
-    internal class PageCalculator
+    public static int CalculateCountOfPages(Process[] processes, int countProcessesInPage)
     {
-        public static int CalculateCountOfPages(Process[] processes, int countProcessesInPage)
+        int countOfPages = processes.Length / countProcessesInPage;
+
+        if (processes.Length % 20 == 0)
         {
-            int countOfPages = processes.Length / countProcessesInPage;
-
-            if (processes.Length % 20 == 0)
-            {
-                countOfPages--;
-            }
-
-            return countOfPages;
+            countOfPages--;
         }
 
-        public static Process[] CalculatePage(Process[] processes, int countProcessesInPage, int currentPage)
+        return countOfPages;
+    }
+
+    public static Process[] CalculatePage(Process[] processes, int countProcessesInPage, int currentPage)
+    {
+        Process[] _page = [ ..processes
+            .Skip(countProcessesInPage * currentPage)
+            .Take(countProcessesInPage) ];
+
+        if (_page.Length < countProcessesInPage)
         {
-            Process[] _page = [ ..processes
-                .Skip(countProcessesInPage * currentPage)
-                .Take(countProcessesInPage) ];
-
-            if (_page.Length < countProcessesInPage)
-            {
-                Array.Resize(ref _page, countProcessesInPage);
-            }
-
-            return _page;
+            Array.Resize(ref _page, countProcessesInPage);
         }
+
+        return _page;
     }
 }

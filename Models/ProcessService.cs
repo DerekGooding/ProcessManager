@@ -57,9 +57,9 @@ internal class ProcessService
         try
         {
             AppLogger.Log("get process full path engine");
-            string processFilePath = processes[index]?.MainModule?.FileName ?? String.Empty;
+            string processFilePath = processes[index]?.MainModule?.FileName ?? string.Empty;
 
-            if (processFilePath == String.Empty)
+            if (processFilePath == string.Empty)
                 return false;
 
             Process.Start("explorer.exe", $"/select,\"{processFilePath}\"");
@@ -102,19 +102,12 @@ internal class ProcessService
     {
         if (process == null)
         {
-            return String.Empty;
+            return string.Empty;
         }
 
         string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
         string nameExtension = Path.GetExtension(moduleFullNamePath);
-        string processName;
-
-        if (process.ProcessName.Length >= 25)
-            processName = process.ProcessName[..22] + "..." + nameExtension;
-        else
-            processName = process.ProcessName + nameExtension;
-
-        return processName;
+        return process.ProcessName.Length >= 25 ? process.ProcessName[..22] + "..." + nameExtension : process.ProcessName + nameExtension;
     }
 
     public static int CalculateProcessMemoryUsage(Process process)
@@ -126,20 +119,8 @@ internal class ProcessService
 
         int processMemoryUsage = 0;
 
-        processMemoryUsage = (int)(process.PrivateMemorySize64 / (1024 * 1024));
-
-        return processMemoryUsage;
+        return (int)(process.PrivateMemorySize64 / (1024 * 1024));
     }
 
-    public static bool CheckProcessNamePointer(Process process, int index)
-    {
-        if (NativeProcessService.CheckProcessName(process))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
+    public static bool CheckProcessNamePointer(Process process, int index) => NativeProcessService.CheckProcessName(process);
 }

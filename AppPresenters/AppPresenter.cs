@@ -135,7 +135,7 @@ internal class AppPresenter
 
     private void OnManageProcessCheckCidValueMethod(int userIndex)
     {
-        if (userIndex < 0 || userIndex > _page.Length - 1)
+        if (userIndex < 0 || userIndex > _page?.Length - 1)
         {
             ErrorHelper(ErrorType.Wrong_Input);
             return;
@@ -284,7 +284,7 @@ internal class AppPresenter
 
             HeaderHandler();
 
-            for (int i = 0; i < _page.Length; i++)
+            for (int i = 0; i < _page?.Length; i++)
                 _processesList.Add(new ProcessStruct(_page[i], i, ProcessService.CalculateProcessMemoryUsage(_page[i]), ProcessService.BuildProcessName(_page[i])));
 
             _view.DrawPage(_processesList);

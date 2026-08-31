@@ -4,7 +4,7 @@ internal class InputService
 {
     public static string GetUserMultiInput()
     {
-        string userInput = Console.ReadLine() ?? String.Empty;
+        string userInput = Console.ReadLine() ?? string.Empty;
         return userInput;
     }
 
