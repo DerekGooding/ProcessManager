@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ProcessManager.Models.NativeProcessServices;
+namespace ProcessManager.Models;
 
 internal class NativeProcessService
 {

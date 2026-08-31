@@ -1,10 +1,7 @@
-﻿using ProcessManager.Enums.ErrorTypes;
-using ProcessManager.Enums.ProcessChangePriorityTypes;
-using ProcessManager.Enums.ProcessManageTypes;
-using ProcessManager.Enums.SortTypes;
+﻿using ProcessManager.Enums;
 using ProcessManager.Structs;
 
-namespace ProcessManager.Interfaces.Iviews;
+namespace ProcessManager.Interfaces;
 
 internal interface IView
 {

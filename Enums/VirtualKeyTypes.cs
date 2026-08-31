@@ -1,4 +1,4 @@
-﻿namespace ProcessManager.Enums.VirtualKeyTypes;
+﻿namespace ProcessManager.Enums;
 
 public enum VirtualKeyType : short
 {

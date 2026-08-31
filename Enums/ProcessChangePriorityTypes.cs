@@ -1,4 +1,4 @@
-﻿namespace ProcessManager.Enums.ProcessChangePriorityTypes;
+﻿namespace ProcessManager.Enums;
 
 public enum ProcessChangePriorityType : short
 {

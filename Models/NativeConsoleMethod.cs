@@ -1,7 +1,7 @@
-﻿using ProcessManager.Enums.VirtualKeyTypes;
+﻿using ProcessManager.Enums;
 using System.Runtime.InteropServices;
 
-namespace ProcessManager.Models.NativeConsoleMethods;
+namespace ProcessManager.Models;
 
 internal class NativeConsoleMethod
 {

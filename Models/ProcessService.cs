@@ -1,9 +1,8 @@
-﻿using ProcessManager.Loggers.AppLoggeres;
-using ProcessManager.Models.NativeProcessServices;
+﻿using ProcessManager.Loggers;
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace ProcessManager.Models.ProcessServices;
+namespace ProcessManager.Models;
 
 internal class ProcessService
 {

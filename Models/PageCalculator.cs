@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ProcessManager.Models.PageCalculators
+namespace ProcessManager.Models
 {
     internal class PageCalculator
     {

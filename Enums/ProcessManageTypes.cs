@@ -1,4 +1,4 @@
-﻿namespace ProcessManager.Enums.ProcessManageTypes;
+﻿namespace ProcessManager.Enums;
 
 public enum ProcessManageType : short
 {

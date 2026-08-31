@@ -1,8 +1,8 @@
-﻿using ProcessManager.Displays;
-using ProcessManager.Models.NativeConsoleMethods;
-using ProcessManager.Presenters;
+﻿using ProcessManager.AppPresenters;
+using ProcessManager.View;
+using ProcessManager.Models;
 
-namespace Process_manager;
+namespace ProcessManager;
 
 class Program
 {

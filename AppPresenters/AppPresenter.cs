@@ -1,16 +1,11 @@
-﻿using ProcessManager.Enums.ErrorTypes;
-using ProcessManager.Enums.ProcessChangePriorityTypes;
-using ProcessManager.Enums.ProcessManageTypes;
-using ProcessManager.Enums.SortTypes;
-using ProcessManager.Interfaces.Iviews;
-using ProcessManager.Loggers.AppLoggeres;
-using ProcessManager.Models.InputServices;
-using ProcessManager.Models.PageCalculators;
-using ProcessManager.Models.ProcessServices;
+﻿using ProcessManager.Enums;
+using ProcessManager.Interfaces;
+using ProcessManager.Loggers;
+using ProcessManager.Models;
 using ProcessManager.Structs;
 using System.Diagnostics;
 
-namespace ProcessManager.Presenters;
+namespace ProcessManager.AppPresenters;
 
 internal class AppPresenter
 {

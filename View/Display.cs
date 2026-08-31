@@ -1,15 +1,10 @@
-﻿using ProcessManager.Enums.ErrorTypes;
-using ProcessManager.Enums.ProcessChangePriorityTypes;
-using ProcessManager.Enums.ProcessManageTypes;
-using ProcessManager.Enums.SortTypes;
-using ProcessManager.Enums.VirtualKeyTypes;
-using ProcessManager.Interfaces.Iviews;
-using ProcessManager.Models.InputServices;
-using ProcessManager.Models.NativeConsoleMethods;
+﻿using ProcessManager.Enums;
+using ProcessManager.Interfaces;
+using ProcessManager.Models;
 using ProcessManager.Structs;
 using ProcessManager.UiResources;
 
-namespace ProcessManager.Displays;
+namespace ProcessManager.View;
 
 internal class Display : IView
 {
