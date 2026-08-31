@@ -4,20 +4,21 @@ using System.Text;
 
 namespace ProcessManager.Models;
 
-internal class NativeProcessService
+internal static partial class NativeProcessService
 {
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr OpenProcess(int dwDesiredAcess, bool bInheritHandle, int processId);
+    [LibraryImport("kernel32.dll")]
+    public static partial IntPtr OpenProcess(int dwDesiredAcess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, int processId);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, StringBuilder lpExeName, ref int lpdwSize);
-    [DllImport("kernel32.dll")]
-    public static extern bool CloseHandle(IntPtr hProcess);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool CloseHandle(IntPtr hProcess);
 
     public static string GetProcessModuleFullName(Process process)
     {
-        int size = 512;
+        var size = 512;
         var sb = new StringBuilder(size);
-        IntPtr handle = OpenProcess(0x1000, false, process.Id);
+        var handle = OpenProcess(0x1000, false, process.Id);
 
         if (handle != IntPtr.Zero)
         {
@@ -25,7 +26,7 @@ internal class NativeProcessService
             {
                 if (QueryFullProcessImageName(handle, 0, sb, ref size))
                 {
-                    string fullPath = sb.ToString();
+                    var fullPath = sb.ToString();
                     return fullPath;
                 }
             }

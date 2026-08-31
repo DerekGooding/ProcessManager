@@ -19,9 +19,9 @@ internal partial class NativeConsoleMethod
         const int ConsoleBlockMouseSelection = 0x0080;
         const int ConsoleAccessInputs = 0x0001 | 0x0002 | 0x0003 | 0x0004;
 
-        uint mode = ConsoleBlockMouseSelection | ConsoleAccessInputs;
+        const uint mode = ConsoleBlockMouseSelection | ConsoleAccessInputs;
 
-        IntPtr consoleMode = GetStdHandle(-10);
+        var consoleMode = GetStdHandle(-10);
         SetConsoleMode(consoleMode, mode);
     }
 
@@ -36,7 +36,7 @@ internal partial class NativeConsoleMethod
 
         while (true)
         {
-            for (int i = 0; i < virtualKeyTypes.Length; i++)
+            for (var i = 0; i < virtualKeyTypes.Length; i++)
             {
                 if ((GetAsyncKeyState((short)virtualKeyTypes[i]) & 0x8000) != 0)
                 {

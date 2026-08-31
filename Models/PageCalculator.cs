@@ -2,11 +2,11 @@
 
 namespace ProcessManager.Models;
 
-internal class PageCalculator
+internal static class PageCalculator
 {
     public static int CalculateCountOfPages(Process[] processes, int countProcessesInPage)
     {
-        int countOfPages = processes.Length / countProcessesInPage;
+        var countOfPages = processes.Length / countProcessesInPage;
 
         if (processes.Length % 20 == 0)
         {

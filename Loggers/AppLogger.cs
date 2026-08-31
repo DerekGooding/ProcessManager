@@ -11,7 +11,7 @@ public static class AppLogger
     {
         lock (_locker)
         {
-            string logLine = $"[{DateTime.Now:HH:mm:ss.fff}] | [{Environment.CurrentManagedThreadId}] | [{callerName}]: {message}\n";
+            var logLine = $"[{DateTime.Now:HH:mm:ss.fff}] | [{Environment.CurrentManagedThreadId}] | [{callerName}]: {message}\n";
             File.AppendAllText(FilePath, logLine);
         }
     }

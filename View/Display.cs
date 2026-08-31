@@ -40,7 +40,7 @@ internal class Display : IView
     private const int PidTextSpaceLimit = 5;
 
     private int _leftPartLengthLogo = 0;
-    private ConsoleColor consoleColor = ConsoleColor.White;
+    private ConsoleColor _consoleColor = ConsoleColor.White;
 
     public void MainMenu()
     {
@@ -113,7 +113,7 @@ internal class Display : IView
 
         EnterCid();
 
-        if (!int.TryParse(Console.ReadLine(), out int userIndex))
+        if (!int.TryParse(Console.ReadLine(), out var userIndex))
         {
             OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
             return;
@@ -153,7 +153,7 @@ internal class Display : IView
     {
         OnSearchPageReady?.Invoke();
 
-        if (!int.TryParse(InputService.GetUserMultiInput(), out int userIndex))
+        if (!int.TryParse(InputService.GetUserMultiInput(), out var userIndex))
         {
             OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
             return;
@@ -274,7 +274,7 @@ internal class Display : IView
 
     public void DrawPage(List<ProcessStruct> processes)
     {
-        for (int i = 0; i < processes.Count; i++)
+        for (var i = 0; i < processes.Count; i++)
         {
             if (processes[i].Process == null)
             {
@@ -282,11 +282,11 @@ internal class Display : IView
             }
             else
             {
-                consoleColor = processes[i].Index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
+                _consoleColor = processes[i].Index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
 
-                Console.Write($"| CID: {processes[i].Index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
+                Console.Write($"| CID: {processes[i].Index} \t", Console.ForegroundColor = _consoleColor); // сделать для cid массив full process'ов 
                 Console.Write($"| Name: {processes[i].ProcessName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-                Console.Write($"| PID: {processes[i].Process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = consoleColor);
+                Console.Write($"| PID: {processes[i].Process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = _consoleColor);
                 Console.Write($"| Memory: {processes[i].MemoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
             }
         }
@@ -297,7 +297,7 @@ internal class Display : IView
         Console.ResetColor();
         Console.WriteLine();
 
-        for (int i = 0; i < UiResource.ProcessOptions.Length; i++)
+        for (var i = 0; i < UiResource.ProcessOptions.Length; i++)
         {
             Console.WriteLine(UiResource.ProcessOptions[i]);
         }
@@ -308,7 +308,7 @@ internal class Display : IView
         Console.ResetColor();
         Console.WriteLine();
 
-        for (int i = 0; i < UiResource.ChangePriorityOptions.Length; i++)
+        for (var i = 0; i < UiResource.ChangePriorityOptions.Length; i++)
         {
             Console.WriteLine(UiResource.ChangePriorityOptions[i]);
         }
@@ -319,7 +319,7 @@ internal class Display : IView
         Console.ResetColor();
         Console.WriteLine();
 
-        for (int i = 0; i < UiResource.FilterOptions.Length; i++)
+        for (var i = 0; i < UiResource.FilterOptions.Length; i++)
         {
             Console.WriteLine(UiResource.FilterOptions[i]);
         }
@@ -332,11 +332,11 @@ internal class Display : IView
         Console.Write(UiResource.Logo);
         Console.ResetColor();
 
-        for (int i = 0; i < UiResource.MenuOptions.Length; i++)
+        for (var i = 0; i < UiResource.MenuOptions.Length; i++)
         {
             Console.SetCursorPosition(XPositionCursorLogo, YPositionCursorLogo + i);
 
-            for (int j = 0; j < UiResource.MenuOptions[i].Length; j++)
+            for (var j = 0; j < UiResource.MenuOptions[i].Length; j++)
             {
                 if (UiResource.MenuOptions[i][j] == ':')
                 {
@@ -344,7 +344,7 @@ internal class Display : IView
                 }
             }
 
-            for (int l = 0; l < _leftPartLengthLogo; l++)
+            for (var l = 0; l < _leftPartLengthLogo; l++)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(UiResource.MenuOptions[i][l]);
@@ -352,7 +352,7 @@ internal class Display : IView
 
             Console.ResetColor();
 
-            for (int k = _leftPartLengthLogo; k < UiResource.MenuOptions[i].Length; k++)
+            for (var k = _leftPartLengthLogo; k < UiResource.MenuOptions[i].Length; k++)
             {
                 Console.Write(UiResource.MenuOptions[i][k]);
             }

@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace ProcessManager.Models;
 
-internal class ProcessService
+internal static class ProcessService
 {
     public static Process[] GetAllProcesses() => Process.GetProcesses();
 
@@ -54,7 +54,7 @@ internal class ProcessService
         try
         {
             AppLogger.Log("get process full path engine");
-            string processFilePath = processes[index]?.MainModule?.FileName ?? string.Empty;
+            var processFilePath = processes[index]?.MainModule?.FileName ?? string.Empty;
 
             if (processFilePath.Length == 0)
                 return false;
@@ -89,7 +89,7 @@ internal class ProcessService
     {
         float totalMemoryUsage = 0;
 
-        for (int i = 0; i < processes.Length; i++)
+        for (var i = 0; i < processes.Length; i++)
             totalMemoryUsage += (float)processes[i].PrivateMemorySize64 / (1024 * 1024);
 
         return totalMemoryUsage;
@@ -102,8 +102,8 @@ internal class ProcessService
             return string.Empty;
         }
 
-        string moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
-        string nameExtension = Path.GetExtension(moduleFullNamePath);
+        var moduleFullNamePath = NativeProcessService.GetProcessModuleFullName(process);
+        var nameExtension = Path.GetExtension(moduleFullNamePath);
         return process.ProcessName.Length >= 25 ? process.ProcessName[..22] + "..." + nameExtension : process.ProcessName + nameExtension;
     }
 

@@ -281,7 +281,7 @@ internal class AppPresenter
 
             HeaderHandler();
 
-            for (int i = 0; i < _page?.Length; i++)
+            for (var i = 0; i < _page?.Length; i++)
                 _processesList.Add(new ProcessStruct(_page[i], i, ProcessService.CalculateProcessMemoryUsage(_page[i]), ProcessService.BuildProcessName(_page[i])));
 
             _view.DrawPage(_processesList);

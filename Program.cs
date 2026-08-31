@@ -4,7 +4,7 @@ using ProcessManager.Models;
 
 namespace ProcessManager;
 
-class Program
+static class Program
 {
     static void Main()
     {

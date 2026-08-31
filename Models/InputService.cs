@@ -1,10 +1,10 @@
 ﻿namespace ProcessManager.Models;
 
-internal class InputService
+internal static class InputService
 {
     public static string GetUserMultiInput()
     {
-        string userInput = Console.ReadLine() ?? string.Empty;
+        var userInput = Console.ReadLine() ?? string.Empty;
         return userInput;
     }
 
