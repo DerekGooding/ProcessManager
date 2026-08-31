@@ -28,8 +28,7 @@ internal static partial class NativeProcessService
             {
                 if (QueryFullProcessImageName(handle, 0, sb, ref size))
                 {
-                    var fullPath = sb.ToString();
-                    return fullPath;
+                    return sb.ToString();
                 }
             }
             finally

@@ -2,19 +2,15 @@
 
 internal static class InputService
 {
-    public static string GetUserMultiInput()
-    {
-        var userInput = Console.ReadLine() ?? string.Empty;
-        return userInput;
-    }
+    public static string GetUserMultiInput() => ReadLine() ?? string.Empty;
 
     public static void BlockInputInThreadSleep(int milliseconds)
     {
         Thread.Sleep(milliseconds);
 
-        while (Console.KeyAvailable)
+        while (KeyAvailable)
         {
-            Console.ReadKey(true);
+            ReadKey(true);
         }
     }
 }

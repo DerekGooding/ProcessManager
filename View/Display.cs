@@ -121,7 +121,7 @@ internal class Display : IView
 
         EnterCid();
 
-        if (!int.TryParse(Console.ReadLine(), out var userIndex))
+        if (!int.TryParse(ReadLine(), out var userIndex))
         {
             OnDefaultGeneralRequested?.Invoke(ErrorType.Wrong_Input);
             return;
@@ -240,21 +240,21 @@ internal class Display : IView
 
     public void DisplayError(ErrorType errorType)
     {
-        Console.Clear();
-        Console.ForegroundColor = ConsoleColor.Red;
+        Clear();
+        ForegroundColor = ConsoleColor.Red;
 
         switch (errorType)
         {
             case ErrorType.Run_As_Administator:
-                Console.WriteLine("Error #1: Try to run the program as administrator");
+                WriteLine("Error #1: Try to run the program as administrator");
                 break;
 
             case ErrorType.Wrong_Input:
-                Console.WriteLine("Error #2: Wrong input, make sure you have entered it correctly.");
+                WriteLine("Error #2: Wrong input, make sure you have entered it correctly.");
                 break;
 
             default:
-                Console.WriteLine("Error #404: Unknown error");
+                WriteLine("Error #404: Unknown error");
                 break;
         }
         Console.ResetColor();
@@ -263,22 +263,22 @@ internal class Display : IView
     public void EnterCid()
     {
         Console.ResetColor();
-        Console.Write($"\nEnter a CID: ");
+        Write($"\nEnter a CID: ");
     }
 
     public void EnterNumberOfPage()
     {
         Console.ResetColor();
-        Console.Write($"\nEnter a number of page: ");
+        Write($"\nEnter a number of page: ");
     }
 
     public void DrawHeader(int currentPage, int countOfPages)
     {
-        Console.WriteLine("'Q' left | 'E' right | 'F1' search page | 'TAB' filter | '`' manage | 'ESC / BACKSPACE' return");
-        Console.WriteLine($"Current page: {currentPage}|{countOfPages}      \n\n");
+        WriteLine("'Q' left | 'E' right | 'F1' search page | 'TAB' filter | '`' manage | 'ESC / BACKSPACE' return");
+        WriteLine($"Current page: {currentPage}|{countOfPages}      \n\n");
     }
 
-    public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses) => Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
+    public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses) => WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
 
     public void DrawPage(List<ProcessStruct> processes)
     {
@@ -286,16 +286,16 @@ internal class Display : IView
         {
             if (processes[i].Process == null)
             {
-                Console.WriteLine(UiResource.EmptyStroke);
+                WriteLine(UiResource.EmptyStroke);
             }
             else
             {
                 _consoleColor = processes[i].Index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
 
-                Console.Write($"| CID: {processes[i].Index} \t", Console.ForegroundColor = _consoleColor); // сделать для cid массив full process'ов
-                Console.Write($"| Name: {processes[i].ProcessName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-                Console.Write($"| PID: {processes[i].Process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = _consoleColor);
-                Console.Write($"| Memory: {processes[i].MemoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+                Write($"| CID: {processes[i].Index} \t", ForegroundColor = _consoleColor); // сделать для cid массив full process'ов
+                Write($"| Name: {processes[i].ProcessName,-NameTextSpaceLimit}\t", ForegroundColor = ConsoleColor.Yellow);
+                Write($"| PID: {processes[i].Process.Id,-PidTextSpaceLimit} \t", ForegroundColor = _consoleColor);
+                Write($"| Memory: {processes[i].MemoryUsage,-MemoryTextSpaceLimit} MB     \n", ForegroundColor = ConsoleColor.Green);
             }
         }
     }
@@ -303,46 +303,46 @@ internal class Display : IView
     public void ManageOptionDraw()
     {
         Console.ResetColor();
-        Console.WriteLine();
+        WriteLine();
 
         for (var i = 0; i < UiResource.ProcessOptions.Length; i++)
         {
-            Console.WriteLine(UiResource.ProcessOptions[i]);
+            WriteLine(UiResource.ProcessOptions[i]);
         }
     }
 
     public void ChangePriorityOptionDraw()
     {
         Console.ResetColor();
-        Console.WriteLine();
+        WriteLine();
 
         for (var i = 0; i < UiResource.ChangePriorityOptions.Length; i++)
         {
-            Console.WriteLine(UiResource.ChangePriorityOptions[i]);
+            WriteLine(UiResource.ChangePriorityOptions[i]);
         }
     }
 
     public void FilterMemoryOptionsDraw()
     {
         Console.ResetColor();
-        Console.WriteLine();
+        WriteLine();
 
         for (var i = 0; i < UiResource.FilterOptions.Length; i++)
         {
-            Console.WriteLine(UiResource.FilterOptions[i]);
+            WriteLine(UiResource.FilterOptions[i]);
         }
     }
 
     public void MainMenuDraw()
     {
-        Console.Clear();
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.Write(UiResource.Logo);
+        Clear();
+        ForegroundColor = ConsoleColor.Cyan;
+        Write(UiResource.Logo);
         Console.ResetColor();
 
         for (var i = 0; i < UiResource.MenuOptions.Length; i++)
         {
-            Console.SetCursorPosition(XPositionCursorLogo, YPositionCursorLogo + i);
+            SetCursorPosition(XPositionCursorLogo, YPositionCursorLogo + i);
 
             for (var j = 0; j < UiResource.MenuOptions[i].Length; j++)
             {
@@ -354,22 +354,22 @@ internal class Display : IView
 
             for (var l = 0; l < _leftPartLengthLogo; l++)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write(UiResource.MenuOptions[i][l]);
+                ForegroundColor = ConsoleColor.Cyan;
+                Write(UiResource.MenuOptions[i][l]);
             }
 
             Console.ResetColor();
 
             for (var k = _leftPartLengthLogo; k < UiResource.MenuOptions[i].Length; k++)
             {
-                Console.Write(UiResource.MenuOptions[i][k]);
+                Write(UiResource.MenuOptions[i][k]);
             }
         }
     }
 
-    public void ClearText() => Console.Clear();
+    public void ClearText() => Clear();
 
-    public void CursorToTop() => Console.SetCursorPosition(0, 0);
+    public void CursorToTop() => SetCursorPosition(0, 0);
 
     public void ResetColor() => Console.ResetColor();
 }
