@@ -276,18 +276,18 @@ internal class Display : IView
     {
         for (int i = 0; i < processes.Count; i++)
         {
-            if (processes[i].process == null)
+            if (processes[i].Process == null)
             {
                 Console.WriteLine(UiResource.EmptyStroke);
             }
             else
             {
-                consoleColor = processes[i].index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
+                consoleColor = processes[i].Index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
 
-                Console.Write($"| CID: {processes[i].index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
-                Console.Write($"| Name: {processes[i].processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
-                Console.Write($"| PID: {processes[i].process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = consoleColor);
-                Console.Write($"| Memory: {processes[i].memoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
+                Console.Write($"| CID: {processes[i].Index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
+                Console.Write($"| Name: {processes[i].ProcessName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
+                Console.Write($"| PID: {processes[i].Process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = consoleColor);
+                Console.Write($"| Memory: {processes[i].MemoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);
             }
         }
     }
