@@ -21,7 +21,6 @@ internal class ProcessService
     public static void SortProcessesByMemory(Process[] processes) =>
         Array.Sort(processes, (x, y) => y.PrivateMemorySize64.CompareTo(x.PrivateMemorySize64));
 
-
     public static bool KillProcess(Process[] processes, int index)
     {
         try

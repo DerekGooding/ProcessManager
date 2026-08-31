@@ -2,9 +2,7 @@
 using ProcessManager.Enums.ProcessChangePriorityTypes;
 using ProcessManager.Enums.ProcessManageTypes;
 using ProcessManager.Enums.SortTypes;
-using ProcessManager.Enums.VirtualKeyTypes;
 using ProcessManager.Structs;
-using System.Diagnostics;
 
 namespace ProcessManager.Interfaces.Iviews;
 

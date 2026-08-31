@@ -5,7 +5,6 @@ using ProcessManager.Enums.SortTypes;
 using ProcessManager.Interfaces.Iviews;
 using ProcessManager.Loggers.AppLoggeres;
 using ProcessManager.Models.InputServices;
-using ProcessManager.Models.NativeConsoleMethods;
 using ProcessManager.Models.PageCalculators;
 using ProcessManager.Models.ProcessServices;
 using ProcessManager.Structs;

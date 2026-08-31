@@ -199,7 +199,7 @@ internal class Display : IView
     {
         OnChangePriorityReady?.Invoke();
 
-        switch (OnWaitingUserInput?.Invoke)
+        switch (NativeConsoleMethod.GetHiddenUserInput())
         {
             case VirtualKeyType.VK_1:
                 OnChangePriorityOptionRequested?.Invoke(ProcessChangePriorityType.RealTime, userIndex);
