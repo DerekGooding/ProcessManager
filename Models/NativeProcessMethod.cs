@@ -8,8 +8,10 @@ internal static partial class NativeProcessService
 {
     [LibraryImport("kernel32.dll")]
     public static partial IntPtr OpenProcess(int dwDesiredAcess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, int processId);
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, StringBuilder lpExeName, ref int lpdwSize);
+
     [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool CloseHandle(IntPtr hProcess);
@@ -30,7 +32,6 @@ internal static partial class NativeProcessService
                     return fullPath;
                 }
             }
-
             finally
             {
                 CloseHandle(handle);

@@ -56,6 +56,7 @@ internal class AppPresenter
         view.OnExitRequested += OnExitClickedMethod;
         view.OnReturnRequested += OnReturnRequested;
     }
+
     private void ChangePriorityProcessCheckOption(ProcessChangePriorityType processChangePriorityType, int userIndex)
     {
         if (_page is null)
@@ -150,6 +151,7 @@ internal class AppPresenter
     {
         if (_currentPage < _countOfPages) _currentPage++;
     }
+
     private void OnPreviousPageRequestedMethod()
     {
         if (_currentPage > 0) _currentPage--;
@@ -177,6 +179,7 @@ internal class AppPresenter
         _view.DisplayError(ErrorType.Wrong_Input);
         InputService.BlockInputInThreadSleep(1500);
     }
+
     private void OnDefaultMainDisplayClickedMethod()
     {
         DisableDisplayList();
@@ -243,7 +246,6 @@ internal class AppPresenter
 
     private async Task UpdateProcessesDataAsync()
     {
-
         AppLogger.Log("UPDATE ASYNC: start method");
 
         foreach (var process in _processes) // TODO later 0
@@ -264,7 +266,6 @@ internal class AppPresenter
             case SortType.Memory:
                 ProcessService.SortProcessesByMemory(_processes);
                 break;
-
         }
     }
 

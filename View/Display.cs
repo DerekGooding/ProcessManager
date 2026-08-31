@@ -9,27 +9,39 @@ namespace ProcessManager.View;
 internal class Display : IView
 {
     public event Action<SortType>? OnProcessesFilterOptionRequested;
+
     public event Action<ProcessManageType, int>? OnManageOptionRequested;
+
     public event Action<ProcessChangePriorityType, int>? OnChangePriorityOptionRequested;
 
     public event Action<int>? OnSearchPageCheckValue;
+
     public event Action<int>? OnManageProcessCheckCidValue;
 
     public event Action? OnDefaultMainMenuRequested;
+
     public event Action? OnDefaultMainDisplayRequested;
+
     public event Action<ErrorType>? OnDefaultGeneralRequested;
 
     public event Action? OnChangePriorityReady;
+
     public event Action? OnSearchPageReady;
+
     public event Action? OnFilterProcessesReady;
+
     public event Action? OnManageProcessReady;
+
     public event Action? OnMainDisplayReady;
 
     public event Action? OnEnterRequested;
+
     public event Action? OnExitRequested;
+
     public event Action? OnReturnRequested;
 
     public event Action? OnPreviousPageRequested;
+
     public event Action? OnNextPageRequested;
 
     private const int TotalMemoryUsageTextSpaceLimit = 4;
@@ -284,7 +296,7 @@ internal class Display : IView
             {
                 _consoleColor = processes[i].Index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
 
-                Console.Write($"| CID: {processes[i].Index} \t", Console.ForegroundColor = _consoleColor); // сделать для cid массив full process'ов 
+                Console.Write($"| CID: {processes[i].Index} \t", Console.ForegroundColor = _consoleColor); // сделать для cid массив full process'ов
                 Console.Write($"| Name: {processes[i].ProcessName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);
                 Console.Write($"| PID: {processes[i].Process.Id,-PidTextSpaceLimit} \t", Console.ForegroundColor = _consoleColor);
                 Console.Write($"| Memory: {processes[i].MemoryUsage,-MemoryTextSpaceLimit} MB     \n", Console.ForegroundColor = ConsoleColor.Green);

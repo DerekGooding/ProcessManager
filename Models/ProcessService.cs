@@ -25,7 +25,6 @@ internal static class ProcessService
             processes[index].Kill();
             return true;
         }
-
         catch (Win32Exception)
         {
             AppLogger.Log("Win 32 exception");
@@ -41,7 +40,6 @@ internal static class ProcessService
             processes[index].CloseMainWindow();
             return true;
         }
-
         catch (Win32Exception)
         {
             AppLogger.Log("Win 32 exception");
@@ -62,7 +60,6 @@ internal static class ProcessService
             Process.Start("explorer.exe", $"/select,\"{processFilePath}\"");
             return true;
         }
-
         catch (Win32Exception)
         {
             AppLogger.Log("Win 32 exception");

@@ -7,8 +7,10 @@ internal partial class NativeConsoleMethod
 {
     [LibraryImport("user32.dll")]
     private static partial short GetAsyncKeyState(int vKey);
+
     [LibraryImport("kernel32.dll")]
     public static partial IntPtr GetStdHandle(int nStdHandle);
+
     [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);

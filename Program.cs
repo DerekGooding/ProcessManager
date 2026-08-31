@@ -1,12 +1,12 @@
 ﻿using ProcessManager.AppPresenters;
-using ProcessManager.View;
 using ProcessManager.Models;
+using ProcessManager.View;
 
 namespace ProcessManager;
 
-static class Program
+internal static class Program
 {
-    static void Main()
+    private static void Main()
     {
         var display = new Display();
         AppPresenter appController = new(display);
