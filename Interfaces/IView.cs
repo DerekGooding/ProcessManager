@@ -1,7 +1,4 @@
-﻿using ProcessManager.Enums;
-using ProcessManager.Structs;
-
-namespace ProcessManager.Interfaces;
+﻿namespace ProcessManager.Interfaces;
 
 internal interface IView
 {

@@ -1,8 +1,4 @@
-﻿using ProcessManager.Enums;
-using ProcessManager.Interfaces;
-using ProcessManager.Models;
-using ProcessManager.Structs;
-using ProcessManager.UiResources;
+﻿using ProcessManager.UiResources;
 
 namespace ProcessManager.View;
 
@@ -371,12 +367,9 @@ internal class Display : IView
         }
     }
 
-    public void ClearText() =>
-        Console.Clear();
+    public void ClearText() => Console.Clear();
 
-    public void CursorToTop() =>
-        Console.SetCursorPosition(0, 0);
+    public void CursorToTop() => Console.SetCursorPosition(0, 0);
 
-    public void ResetColor() =>
-        Console.ResetColor();
+    public void ResetColor() => Console.ResetColor();
 }

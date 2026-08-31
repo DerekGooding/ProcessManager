@@ -1,9 +1,4 @@
-﻿using ProcessManager.Enums;
-using ProcessManager.Interfaces;
-using ProcessManager.Loggers;
-using ProcessManager.Models;
-using ProcessManager.Structs;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace ProcessManager.AppPresenters;
 

@@ -1,5 +1,4 @@
-﻿using ProcessManager.Loggers;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 
 namespace ProcessManager.Models;
@@ -105,16 +104,7 @@ internal static class ProcessService
     }
 
     public static int CalculateProcessMemoryUsage(Process process)
-    {
-        if (process == null)
-        {
-            return -1;
-        }
-
-        //int processMemoryUsage = 0;
-
-        return (int)(process.PrivateMemorySize64 / (1024 * 1024));
-    }
+        => process == null ? -1 : (int)(process.PrivateMemorySize64 / (1024 * 1024));
 
     public static bool CheckProcessNamePointer(Process process, int index) => NativeProcessService.CheckProcessName(process);
 }

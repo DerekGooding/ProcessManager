@@ -1,5 +1,4 @@
 ﻿using ProcessManager.AppPresenters;
-using ProcessManager.Models;
 using ProcessManager.View;
 
 namespace ProcessManager;
