@@ -270,10 +270,7 @@ internal class Display : IView
         Console.WriteLine($"Current page: {currentPage}|{countOfPages}      \n\n");
     }
 
-    public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses)
-    {
-        Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
-    }
+    public void DrawStats(float totalMemoryUsage, float totalMemoryGb, int countOfProcesses) => Console.WriteLine($"Total memory usage: {totalMemoryUsage,TotalMemoryUsageTextSpaceLimit} / {totalMemoryGb} MB | Count of processes: {countOfProcesses}     ");
 
     public void DrawPage(List<ProcessStruct> processes)
     {
@@ -285,8 +282,7 @@ internal class Display : IView
             }
             else
             {
-                if (processes[i].index % 2 == 0) consoleColor = ConsoleColor.DarkGray;
-                else consoleColor = ConsoleColor.Gray;
+                consoleColor = processes[i].index % 2 == 0 ? ConsoleColor.DarkGray : ConsoleColor.Gray;
 
                 Console.Write($"| CID: {processes[i].index} \t", Console.ForegroundColor = consoleColor); // сделать для cid массив full process'ов 
                 Console.Write($"| Name: {processes[i].processName,-NameTextSpaceLimit}\t", Console.ForegroundColor = ConsoleColor.Yellow);

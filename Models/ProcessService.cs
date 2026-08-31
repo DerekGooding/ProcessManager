@@ -6,10 +6,7 @@ namespace ProcessManager.Models;
 
 internal class ProcessService
 {
-    public static Process[] GetAllProcesses()
-    {
-        return Process.GetProcesses();
-    }
+    public static Process[] GetAllProcesses() => Process.GetProcesses();
 
     public static void SortProcessesByName(Process[] processes) =>
         Array.Sort(processes, (x, y) => string.Compare(x.ProcessName, y.ProcessName));
@@ -59,7 +56,7 @@ internal class ProcessService
             AppLogger.Log("get process full path engine");
             string processFilePath = processes[index]?.MainModule?.FileName ?? string.Empty;
 
-            if (processFilePath == string.Empty)
+            if (processFilePath.Length == 0)
                 return false;
 
             Process.Start("explorer.exe", $"/select,\"{processFilePath}\"");

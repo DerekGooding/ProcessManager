@@ -38,13 +38,5 @@ internal class NativeProcessService
         return string.Empty;
     }
 
-    public static bool CheckProcessName(Process process)
-    {
-        if (process == null)
-        {
-            return true;
-        }
-
-        return false;
-    }
+    public static bool CheckProcessName(Process process) => process == null;
 }

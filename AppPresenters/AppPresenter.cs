@@ -14,7 +14,7 @@ internal class AppPresenter
     private readonly ManualResetEvent _manualResetEventPrepareDisplay = new(true);
     private readonly ManualResetEvent _manualResetEventPrepareData = new(true);
     private readonly float _totalMemoryGb = (float)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / (1024 * 1024 * 1024);
-    private readonly List<ProcessStruct> _processesList = new();
+    private readonly List<ProcessStruct> _processesList = [];
     private readonly IView _view;
 
     private CancellationTokenSource? _ctsDisplayList;
@@ -134,26 +134,17 @@ internal class AppPresenter
         }
     }
 
-    private void OnChangePriorityReady()
-    {
-        _view.ChangePriorityOptionDraw();
-    }
+    private void OnChangePriorityReady() => _view.ChangePriorityOptionDraw();
 
     private void OnManageProcessCheckCidValueMethod(int userIndex)
     {
         if (userIndex < 0 || userIndex > _page?.Length - 1)
-        {
             ErrorHelper(ErrorType.Wrong_Input);
-            return;
-        }
         else
             _view.ManageOptionDraw();
     }
 
-    private void OnManageProcessReadyMethod()
-    {
-        DisableDisplayList();
-    }
+    private void OnManageProcessReadyMethod() => DisableDisplayList();
 
     private void OnNextPageRequestedMethod()
     {
